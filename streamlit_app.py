@@ -71,17 +71,17 @@ if el31_file and st.button("📌 EL31 Verilerini Düzenle"):
     df_el31_filtered = remain_last_two(df_el31_cleaned)
 
     # **ZIP dosyasına kaydetme**
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w") as zipf:
-        for tesisat, group in df_el31_filtered.groupby("Tesisat"):
-            unique_muhatap = group["Muhatap adı"].unique()
+zip_buffer = BytesIO()
+with zipfile.ZipFile(zip_buffer, "w") as zipf:
+    for tesisat, group in df_el31_filtered.groupby("Tesisat"):
+        unique_muhatap = group["Muhatap adı"].unique()
             
-            if len(unique_muhatap) == 1:
+        if len(unique_muhatap) == 1:
                 file_name = f"{tesisat}.csv"
                 csv_data = group.to_csv(sep=";", index=False).encode("utf-8")
                 zipf.writestr(file_name, csv_data)
             
-            elif len(unique_muhatap) == 2:
+        elif len(unique_muhatap) == 2:
                 latest_muhatap = unique_muhatap[0]
                 file_name_A = f"{tesisat}-A.csv"
                 csv_data_A = group[group["Muhatap adı"] == latest_muhatap].to_csv(sep=";", index=False).encode("utf-8")
