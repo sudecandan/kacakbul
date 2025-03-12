@@ -154,6 +154,48 @@ df_zblir_filtered = remain_last_two(df_zblir)
 
 
 
+# **ZBLIR_002 VERİLERİNİ DÜZENLE BUTONU**
+if zblir_file and st.button("📌 ZBLIR_002 Verilerini Düzenle"):
+    def filter_latest_two_contacts(df):
+        """Her tesisat için en güncel iki muhatabı seçer."""
+        df["Son Okuma Tarihi"] = pd.to_datetime(df["Son Okuma Tarihi"], dayfirst=True)
+        df = df.sort_values(by=["Tesisat", "Son Okuma Tarihi"], ascending=[True, False])
+        df = df.groupby("Tesisat").apply(lambda x: x[x["Muhatap Adı"].isin(x["Muhatap Adı"].unique()[:2])])
+        return df.reset_index(drop=True)
+
+    df_zblir_cleaned = filter_latest_two_contacts(df_zblir)
+
+    # **ZIP DOSYASI OLUŞTURMA**
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as zipf:
+        for tesisat, group in df_zblir_cleaned.groupby("Tesisat"):
+            unique_muhatap = group["Muhatap Adı"].unique()
+
+            if len(unique_muhatap) == 1:
+                file_name = f"{tesisat}.csv"
+                csv_data = group.to_csv(sep=";", index=False).encode("utf-8")
+                zipf.writestr(file_name, csv_data)
+
+            elif len(unique_muhatap) == 2:
+                latest_muhatap = unique_muhatap[0]
+
+                file_name_A = f"{tesisat}-A.csv"
+                csv_data_A = group[group["Muhatap Adı"] == latest_muhatap].to_csv(sep=";", index=False).encode("utf-8")
+                zipf.writestr(file_name_A, csv_data_A)
+
+                file_name_AB = f"{tesisat}-AB.csv"
+                csv_data_AB = group.to_csv(sep=";", index=False).encode("utf-8")
+                zipf.writestr(file_name_AB, csv_data_AB)
+
+    zip_buffer.seek(0)
+
+    st.success("✅ ZBLIR_002 Verileri Düzenlendi!")
+    st.download_button("📥 Düzenlenmiş ZBLIR_002 Dosyalarını ZIP Olarak İndir", zip_buffer, "zblir_edited.zip", "application/zip")
+
+
+
+
+
 
 
 
