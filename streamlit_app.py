@@ -142,7 +142,6 @@ if zblir_file and st.button("📌 ZBLIR_002 Verilerini Düzenle"):
 import streamlit as st
 
 # 📊 Kullanıcıdan analiz için giriş al
-st.markdown("### 📊 Hangi Analiz Yapılacak? & 📉 Düşüş Parametreleri")
 
 col1, col2 = st.columns([1.5, 1])  # Sol tarafı genişlettik
 
