@@ -4,7 +4,7 @@ import zipfile
 import os
 
 # Streamlit başlığı
-st.title("⚡ Kaçak Elektrik Kullanım Tespiti ⚡")
+st.title("⚡ KaçakBul")
 
 # Kullanıcıdan dosya yükleme için iki sütun
 col1, col2 = st.columns(2)
