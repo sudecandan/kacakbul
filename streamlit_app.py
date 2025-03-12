@@ -139,30 +139,31 @@ if zblir_file and st.button("📌 ZBLIR_002 Verilerini Düzenle"):
 
 
 
-import streamlit as st
-
 # 📊 Kullanıcıdan analiz için giriş al
-
 col1, col2 = st.columns([1, 1])  # Sol tarafı genişlettik
 
 # 🟢 **Analiz Seçenekleri**
 with col1:
     st.markdown("#### 📊 Hangi Analiz Yapılacak?")
-    
+
     # Seçeneklerin listesi
     analysis_options = ["P Analizi", "T1 Analizi", "T2 Analizi", "T3 Analizi"]
 
-    # Kutucuklar için boş bir sözlük
-    selected_options = {}
+    # Session state içinde checkbox durumlarını sakla
+    if "selected_analysis" not in st.session_state:
+        st.session_state.selected_analysis = {opt: False for opt in analysis_options}
 
-    # Her analiz için bir checkbox ekleyelim
+    # Checkboxları oluştur
     for option in analysis_options:
-        selected_options[option] = st.checkbox(option)
+        st.session_state.selected_analysis[option] = st.checkbox(option, st.session_state.selected_analysis[option])
 
     # Tümünü Seç butonu
-    if st.button("Tümünü Seç"):
-        for key in selected_options:
-            selected_options[key] = True  # Hepsini seçili yapar
+    def toggle_all():
+        all_selected = all(st.session_state.selected_analysis.values())
+        for key in st.session_state.selected_analysis:
+            st.session_state.selected_analysis[key] = not all_selected  # Tersine çevir
+
+    st.button("Tümünü Seç", on_click=toggle_all)
 
 # 🔵 **Düşüş Parametreleri**
 with col2:
@@ -171,7 +172,8 @@ with col2:
     decrease_count = st.number_input("🔄 Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=2)
 
 # **Seçili analizleri belirleme**
-selected_analysis = [key for key, value in selected_options.items() if value]
+selected_analysis = [key for key, value in st.session_state.selected_analysis.items() if value]
+
 
 
 
