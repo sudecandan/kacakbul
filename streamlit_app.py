@@ -149,7 +149,7 @@ zip_buffer.seek(0)
 
 # **İndirme Butonu**
 st.success("✅ ZBLIR_002 Verileri Düzenlendi!")
-st.download_button("📥 Düzenlenmiş ZBLIR_002 Dosyalarını ZIP Olarak İndir", zip_buffer, "zblir_duzenlenmis.zip", "application/zip"
+st.download_button("📥 Düzenlenmiş ZBLIR_002 Dosyalarını ZIP Olarak İndir", zip_buffer, "zblir_duzenlenmis.zip", "application/zip")
 
 
 
