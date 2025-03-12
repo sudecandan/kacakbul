@@ -143,7 +143,7 @@ import streamlit as st
 
 # 📊 Kullanıcıdan analiz için giriş al
 
-col1, col2 = st.columns([1.5, 1])  # Sol tarafı genişlettik
+col1, col2 = st.columns([1, 1])  # Sol tarafı genişlettik
 
 # 🟢 **Analiz Seçenekleri**
 with col1:
