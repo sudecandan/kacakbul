@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
-import zipfile
 import os
+import zipfile
+from io import BytesIO
 
 # Streamlit başlığı
 st.title("⚡ KaçakBul")
@@ -34,8 +35,10 @@ if el31_file and zblir_file:
 # **EL31 Verilerini Düzenle** Butonu
 if el31_file and st.button("📌 EL31 Verilerini Düzenle"):
     def clean_el31(df):
-        drop_columns = ["Sözleşme grubu", "Sayaç okuma birimi", "Muhatap", "Sözleşme", "Cihaz", "Ekipman", "Endeks",
-                        "Giriş numarası", "Kontrol rakamı", "Planlanan SO tarihi", "Sayaç okuma nedeni", "Çoklu tayin"]
+        drop_columns = [
+            "Sözleşme grubu", "Sayaç okuma birimi", "Muhatap", "Sözleşme", "Cihaz", "Ekipman", "Endeks",
+            "Giriş numarası", "Kontrol rakamı", "Planlanan SO tarihi", "Sayaç okuma nedeni", "Çoklu tayin"
+        ]
         df = df.drop(columns=drop_columns, errors='ignore')
         df = df[df["Endeks türü"] == "P"]
         df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".").astype(float)
@@ -44,9 +47,18 @@ if el31_file and st.button("📌 EL31 Verilerini Düzenle"):
         return df
 
     df_el31_cleaned = clean_el31(df_el31)
-    st.success("✅ EL31 Verileri Düzenlendi!")
 
-    st.download_button("📥 Düzenlenmiş EL31 Dosyasını İndir", df_el31_cleaned.to_csv(sep=";", index=False).encode("utf-8"), "el31_edited.csv", "text/csv")
+    # **ZIP dosyasına kaydetme**
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as zipf:
+        for tesisat, group in df_el31_cleaned.groupby("Tesisat"):
+            csv_data = group.to_csv(sep=";", index=False).encode("utf-8")
+            zipf.writestr(f"{tesisat}.csv", csv_data)
+
+    zip_buffer.seek(0)
+
+    st.success("✅ EL31 Verileri Düzenlendi!")
+    st.download_button("📥 Düzenlenmiş EL31 Dosyalarını ZIP Olarak İndir", zip_buffer, "el31_edited.zip", "application/zip")
 
 # **ZBLIR_002 Verilerini Düzenle** Butonu
 if zblir_file and st.button("📌 ZBLIR_002 Verilerini Düzenle"):
@@ -58,9 +70,18 @@ if zblir_file and st.button("📌 ZBLIR_002 Verilerini Düzenle"):
         return df
 
     df_zblir_cleaned = clean_zblir(df_zblir)
-    st.success("✅ ZBLIR_002 Verileri Düzenlendi!")
 
-    st.download_button("📥 Düzenlenmiş ZBLIR_002 Dosyasını İndir", df_zblir_cleaned.to_csv(sep=";", index=False).encode("utf-8"), "zblir_edited.csv", "text/csv")
+    # **ZIP dosyasına kaydetme**
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as zipf:
+        for tesisat, group in df_zblir_cleaned.groupby("Tesisat"):
+            csv_data = group.to_csv(sep=";", index=False).encode("utf-8")
+            zipf.writestr(f"{tesisat}.csv", csv_data)
+
+    zip_buffer.seek(0)
+
+    st.success("✅ ZBLIR_002 Verileri Düzenlendi!")
+    st.download_button("📥 Düzenlenmiş ZBLIR_002 Dosyalarını ZIP Olarak İndir", zip_buffer, "zblir_edited.zip", "application/zip")
 
 # Kullanıcıdan analiz için giriş al
 st.subheader("📊 Analiz Parametreleri")
@@ -123,5 +144,6 @@ if st.button("🚀 Analizi Başlat"):
         st.success("✅ T Analizi Tamamlandı!")
         st.dataframe(df_suspicious_t)
         st.download_button("📥 T Analizi Sonuçlarını İndir", df_suspicious_t.to_csv(sep=";", index=False).encode("utf-8"), "t_analizi.csv", "text/csv")
+
 
 
