@@ -139,8 +139,7 @@ if zblir_file and st.button("📌 ZBLIR_002 Verilerini Düzenle"):
 
 
 
-
-
+import streamlit as st
 
 # 📊 Kullanıcıdan analiz için giriş al
 st.markdown("### 📊 Hangi Analiz Yapılacak? & 📉 Düşüş Parametreleri")
@@ -150,20 +149,38 @@ col1, col2 = st.columns([1.5, 1])  # Sol tarafı genişlettik
 # 🟢 **Analiz Seçenekleri**
 with col1:
     st.markdown("#### 📊 Hangi Analiz Yapılacak?")
-    selected_analysis = st.multiselect(
-        " ",  # Label boş bırakıldı, görsel kirlilik yapmasın diye
-        ["P Analizi", "T1 Analizi", "T2 Analizi", "T3 Analizi"]
-    )
-    select_all = st.button("Tümünü Seç")
+    
+    # Seçeneklerin listesi
+    analysis_options = ["P Analizi", "T1 Analizi", "T2 Analizi", "T3 Analizi"]
 
-    if select_all:
-        selected_analysis = ["P Analizi", "T1 Analizi", "T2 Analizi", "T3 Analizi"]
+    # Kutucuklar için boş bir sözlük
+    selected_options = {}
+
+    # Her analiz için bir checkbox ekleyelim
+    for option in analysis_options:
+        selected_options[option] = st.checkbox(option)
+
+    # Tümünü Seç butonu
+    if st.button("Tümünü Seç"):
+        for key in selected_options:
+            selected_options[key] = True  # Hepsini seçili yapar
 
 # 🔵 **Düşüş Parametreleri**
 with col2:
     st.markdown("#### 📉 Düşüş Parametreleri")
     decrease_percentage = st.number_input("📉 Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=10)
     decrease_count = st.number_input("🔄 Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=2)
+
+# **Seçili analizleri belirleme**
+selected_analysis = [key for key, value in selected_options.items() if value]
+
+
+
+
+
+
+
+
 
 
 
