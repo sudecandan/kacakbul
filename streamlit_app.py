@@ -58,7 +58,7 @@ if el31_file and st.button("📌 EL31 Verilerini Düzenle"):
         return df.groupby(["Tesisat", "Sayaç okuma tarihi"], as_index=False).first()
 
     # **Adım 1: EL31 Verilerini Temizleme**
-    df_el31_cleaned = a_to_f(df_el31)
+    df_el31_cleaned = clean_el31(df_el31)
     df_el31_cleaned = only_p_lines(df_el31_cleaned)
     df_el31_cleaned = filter_max_reading(df_el31_cleaned)
 
