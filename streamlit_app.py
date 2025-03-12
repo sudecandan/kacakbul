@@ -141,23 +141,37 @@ if zblir_file and st.button("📌 ZBLIR_002 Verilerini Düzenle"):
 
 
 
-# Kullanıcıdan analiz için giriş al
-st.subheader("📊 Analiz Parametreleri")
 
-col1, col2 = st.columns(2)
+# 📊 Kullanıcıdan analiz için giriş al
+st.markdown("### 📊 Hangi Analiz Yapılacak? & 📉 Düşüş Parametreleri")
+
+col1, col2 = st.columns([1.5, 1])  # Sol tarafı genişlettik
+
+# 🟢 **Analiz Seçenekleri**
 with col1:
-    decrease_percentage = st.number_input("📉 Yüzde Kaç Düşüş (%)", min_value=1, max_value=100, step=1)
+    st.markdown("#### 📊 Hangi Analiz Yapılacak?")
+    selected_analysis = st.multiselect(
+        " ",  # Label boş bırakıldı, görsel kirlilik yapmasın diye
+        ["P Analizi", "T1 Analizi", "T2 Analizi", "T3 Analizi"]
+    )
+    select_all = st.button("Tümünü Seç")
+
+    if select_all:
+        selected_analysis = ["P Analizi", "T1 Analizi", "T2 Analizi", "T3 Analizi"]
+
+# 🔵 **Düşüş Parametreleri**
 with col2:
-    decrease_count = st.number_input("🔄 Kaç Kez Düşüş", min_value=1, max_value=10, step=1)
+    st.markdown("#### 📉 Düşüş Parametreleri")
+    decrease_percentage = st.number_input("📉 Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=10)
+    decrease_count = st.number_input("🔄 Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=2)
 
-# Analiz seçenekleri
-st.subheader("📌 Hangi Analizleri Yapmak İstersiniz?")
-options = ["P", "T1", "T2", "T3"]
-selected_analysis = st.multiselect("Seçim Yapın:", options)
-select_all = st.checkbox("✅ Tümünü Seç")
 
-if select_all:
-    selected_analysis = options
+
+
+
+
+
+
 
 # **Analizi Başlat Butonu**
 if st.button("🚀 Analizi Başlat"):
