@@ -71,7 +71,7 @@ if el31_file and st.button("📌 EL31 Verilerini Düzenle"):
     df_el31_filtered = remain_last_two(df_el31_cleaned)
 
     # **ZIP dosyasına kaydetme**
-    zip_buffer = BytesIO()
+zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, "w") as zipf:
         for tesisat, group in df_el31_filtered.groupby("Tesisat"):
             unique_muhatap = group["Muhatap adı"].unique()
