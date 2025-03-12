@@ -71,7 +71,7 @@ if el31_file and st.button("📌 EL31 Verilerini Düzenle"):
     df_el31_filtered = remain_last_two(df_el31_cleaned)
 
     # **ZIP dosyasına kaydetme**
-zip_buffer = BytesIO()
+    zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, "w") as zipf:
         for tesisat, group in df_el31_filtered.groupby("Tesisat"):
             unique_muhatap = group["Muhatap adı"].unique()
@@ -91,10 +91,10 @@ zip_buffer = BytesIO()
                 csv_data_AB = group.to_csv(sep=";", index=False).encode("utf-8")
                 zipf.writestr(file_name_AB, csv_data_AB)
 
-    zip_buffer.seek(0)
+zip_buffer.seek(0)
 
-    st.success("✅ EL31 Verileri Düzenlendi!")
-    st.download_button("📥 Düzenlenmiş EL31 Dosyalarını ZIP Olarak İndir", zip_buffer, "el31_duzenlenmis.zip", "application/zip")
+st.success("✅ EL31 Verileri Düzenlendi!")
+st.download_button("📥 Düzenlenmiş EL31 Dosyalarını ZIP Olarak İndir", zip_buffer, "el31_duzenlenmis.zip", "application/zip")
 
 
 
