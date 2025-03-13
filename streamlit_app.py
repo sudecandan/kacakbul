@@ -183,79 +183,65 @@ selected_analysis = [key for key, value in st.session_state.selected_analysis.it
 
 
 
-
-
 #BURAYA KADAR DA OKEYYYY GİBİ
 
 
-# 🚀 **P Analizi Fonksiyonu**
-def p_analizi(extracted_files, esik_orani, alt_esik_sayisi):
-    suspicious_tesisats = []
 
-    for file_name, file_data in extracted_files.items():
-        df = pd.read_csv(BytesIO(file_data), delimiter=';', encoding='utf-8')
-
-        # **Sayısal verileri doğru şekilde parse et**
-        df['Okunan sayaç durumu'] = df['Okunan sayaç durumu'].astype(str).str.replace(',', '.').astype(float)
-
-        for tesisat, group in df.groupby('Tesisat'):
-            p_values = group[group['Endeks türü'] == 'P']['Okunan sayaç durumu'].dropna().tolist()
-
-            if not p_values:
-                continue  # Eğer P değeri yoksa atla
-
-            p_values_nonzero = [val for val in p_values if val > 0]
-
-            if len(p_values_nonzero) > 0:
-                p_avg = sum(p_values_nonzero) / len(p_values_nonzero)
-                esik_deger = p_avg * (1 - esik_orani)
-
-                below_threshold_count = sum(1 for val in p_values_nonzero if val < esik_deger)
-
-                # Son üç P değerinin ortalamanın üstünde olup olmadığını kontrol et
-                last_three_values = p_values_nonzero[-3:] if len(p_values_nonzero) >= 3 else []
-                if all(val > p_avg for val in last_three_values):
-                    continue  # Son üç değer ortalamanın üstündeyse şüpheli listeye ekleme
-
-                if below_threshold_count > alt_esik_sayisi:
-                    suspicious_tesisats.append([tesisat])
-
-    # Şüpheli tesisatları yeni bir CSV dosyasına yazdır
-    suspicious_df = pd.DataFrame(suspicious_tesisats, columns=['Şüpheli Tesisat'])
-    return suspicious_df
-
-# 🚀 **Analizi Başlat Butonu**
+# **Analizi Başlat Butonu**
 if st.button("🚀 Analizi Başlat"):
-    if "P Analizi" in selected_analysis and uploaded_zip:
-        with zipfile.ZipFile(uploaded_zip, 'r') as zip_ref:
-            extracted_files = {name: zip_ref.read(name) for name in zip_ref.namelist() if name.endswith(".csv")}
+    
+    # **P Analizi Seçildiyse Çalıştır**
+    if "P Analizi" in selected_analysis:
+        # **P Analizi Fonksiyonu**
+        def p_analizi(df, esik_orani, alt_esik_sayisi):
+            suspicious = []
 
-        st.success(f"✅ {len(extracted_files)} dosya başarıyla açıldı!")
+            # Veriyi temizleme
+            df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".").astype(float)
+
+            for tesisat, group in df.groupby("Tesisat"):
+                p_values = group[group["Endeks türü"] == "P"]["Okunan sayaç durumu"].dropna().tolist()
+
+                if not p_values:
+                    continue  # Eğer "P" değeri yoksa atla
+
+                # **Ortalama P değeri hesapla**
+                p_values_nonzero = [val for val in p_values if val > 0]
+                if len(p_values_nonzero) > 0:
+                    p_avg = sum(p_values_nonzero) / len(p_values_nonzero)
+                    esik_deger = p_avg * (1 - esik_orani / 100)  # Kullanıcının belirlediği düşüş yüzdesine göre eşik belirle
+
+                    # **Eşik altında kalan değerlerin sayısını hesapla**
+                    below_threshold_count = sum(1 for val in p_values_nonzero if val < esik_deger)
+
+                    # **Son 3 değer ortalamadan büyükse şüpheli listeye ekleme**
+                    last_three_values = p_values_nonzero[-3:] if len(p_values_nonzero) >= 3 else []
+                    if all(val > p_avg for val in last_three_values):
+                        continue  # Eğer son 3 değer ortalamadan büyükse, tesisat şüpheli olarak eklenmez
+
+                    # **Şüpheli tesisatı listeye ekle**
+                    if below_threshold_count > alt_esik_sayisi:
+                        suspicious.append([tesisat])
+
+            # **Şüpheli tesisatları DataFrame olarak kaydet**
+            suspicious_df = pd.DataFrame(suspicious, columns=["Şüpheli Tesisat"])
+            return suspicious_df
 
         # **P Analizini Çalıştır**
-        df_suspicious_p = p_analizi(extracted_files, decrease_percentage, decrease_count)
+        df_suspicious_p = p_analizi(df_el31, decrease_percentage, decrease_count)
 
+        # **Sonuçları Göster**
         if not df_suspicious_p.empty:
             st.success("✅ P Analizi Tamamlandı!")
             st.dataframe(df_suspicious_p)
-
-            # **İndirme için CSV Dosyası Hazırla**
-            csv_buffer = BytesIO()
-            df_suspicious_p.to_csv(csv_buffer, sep=";", index=False, encoding="utf-8")
-            csv_buffer.seek(0)
-
             st.download_button(
                 "📥 P Analizi Sonuçlarını İndir",
-                csv_buffer,
-                "p_analizi_sonuclar.csv",
+                df_suspicious_p.to_csv(sep=";", index=False).encode("utf-8"),
+                "p_analizi.csv",
                 "text/csv"
             )
         else:
-            st.warning("❌ Şüpheli tesisat bulunamadı!")
-
-
-
-
+            st.warning("⚠️ P Analizi sonucunda şüpheli tesisat bulunamadı!")
 
 
 
