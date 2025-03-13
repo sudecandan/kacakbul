@@ -201,7 +201,7 @@ if st.button("🚀 Analizi Başlat"):
                 .astype(str)
                 .str.replace(",", ".", regex=True)
                 .str.extract(r'(\d+\.\d+|\d+)')[0]  # Sadece sayıları al, metinleri temizle
-                .astype(float, errors='ignore')  # Sayısal veriye çevirirken hataları yok say
+                .astype(float, errors='coerce')  # Sayısal veriye çevirirken hataları yok say
             )
 
             df = df.dropna(subset=["Okunan sayaç durumu"])  # NaN olan satırları at
@@ -251,9 +251,15 @@ if st.button("🚀 Analizi Başlat"):
                 return None  # Eğer bu endeks türü yoksa işlem yapma
 
             # "Ortalama Tüketim" sütununu sayısal formata çevir
-            filtered_df["Ortalama Tüketim"] = pd.to_numeric(
-                filtered_df["Ortalama Tüketim"].astype(str).str.replace(',', '.'), errors='coerce'
+            filtered_df["Ortalama Tüketim"] = (
+                filtered_df["Ortalama Tüketim"]
+                .astype(str)
+                .str.replace(",", ".", regex=True)
+                .str.extract(r'(\d+\.\d+|\d+)')[0]
+                .astype(float, errors="coerce")
             )
+
+            filtered_df = filtered_df.dropna(subset=["Ortalama Tüketim"])  # NaN olanları temizle
 
             # Sıfır olmayan tüketim değerlerini filtrele
             nonzero_values = filtered_df[filtered_df["Ortalama Tüketim"] > 0]["Ortalama Tüketim"].tolist()
@@ -285,7 +291,7 @@ if st.button("🚀 Analizi Başlat"):
                     # Eşik değerinin altına düşen tüketim sayısını hesapla
                     below_threshold_count = sum(
                         1 for val in group[group["Endeks Türü"] == endeks_turu.replace(" Analizi", "")]["Ortalama Tüketim"].dropna()
-                        if val > 0 and val < threshold_value
+                        if isinstance(val, (int, float)) and val > 0 and val < threshold_value
                     )
 
                     # Eğer belirlenen eşik altı sayısından fazla düşük değer varsa şüpheli olarak ekle
@@ -314,4 +320,5 @@ if st.button("🚀 Analizi Başlat"):
         )
     else:
         st.warning("⚠️ Hiçbir analiz sonucunda şüpheli tesisat bulunamadı!")
+
 
