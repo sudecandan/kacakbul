@@ -127,7 +127,7 @@ if zblir_file and st.button("📌 ZBLIR_002 Verilerini Düzenle"):
     zip_buffer.seek(0)
 
     st.success("✅ ZBLIR_002 Verileri Düzenlendi!")
-    st.download_button("📥 Düzenlenmiş ZBLIR_002 Dosyalarını ZIP Olarak İndir", zip_buffer, "zblir_edited.zip", "application/zip")
+    st.download_button("📥 Düzenlenmiş ZBLIR_002 Dosyalarını ZIP Olarak İndir", zip_buffer, "zblir_duzenlenmis.zip", "application/zip")
 
 
 
