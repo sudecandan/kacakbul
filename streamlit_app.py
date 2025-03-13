@@ -185,6 +185,10 @@ selected_analysis = [key for key, value in st.session_state.selected_analysis.it
 
 #BURAYA KADAR DA OKEYYYY GİBİ
 
+
+
+
+
 # **Analizi Başlat Butonu**
 if st.button("🚀 Analizi Başlat"):
     combined_results = pd.DataFrame(columns=["Şüpheli Tesisat", "Analiz Türü"])
@@ -207,8 +211,6 @@ if st.button("🚀 Analizi Başlat"):
 
             except Exception as e:
                 st.error(f"Hata: Okunan sayaç durumu sütununda hata oluştu. {e}")
-                st.write("Problemli veri örnekleri:")
-                st.dataframe(df[["Tesisat", "Okunan sayaç durumu"]].head(10))
                 return pd.DataFrame()
 
             for tesisat, group in df.groupby("Tesisat"):
@@ -264,11 +266,11 @@ if st.button("🚀 Analizi Başlat"):
             for tesisat, group in df.groupby("Tesisat"):
                 suspicious_endeks_types = []
 
-                for endeks_turu in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]:
-                    if endeks_turu not in selected_analysis:  
+                for endeks_turu in ["T1", "T2", "T3"]:
+                    if endeks_turu + " Analizi" not in selected_analysis:  
                         continue
 
-                    result = calc_avg(group, endeks_turu.replace(" Analizi", ""), threshold_ratio)
+                    result = calc_avg(group, endeks_turu, threshold_ratio)
 
                     if result is None:
                         continue  
@@ -276,12 +278,12 @@ if st.button("🚀 Analizi Başlat"):
                     avg_value, threshold_value = result
 
                     below_threshold_count = sum(
-                        1 for val in group[group["Endeks Türü"] == endeks_turu.replace(" Analizi", "")]["Ortalama Tüketim"].dropna()
-                        if val > 0 and val < threshold_value
+                        1 for val in group[group["Endeks Türü"] == endeks_turu]["Ortalama Tüketim"].dropna()
+                        if pd.notna(val) and isinstance(val, (int, float)) and val > 0 and val < threshold_value
                     )
 
                     if below_threshold_count > below_threshold_limit:
-                        suspicious_endeks_types.append(endeks_turu.replace(" Analizi", ""))
+                        suspicious_endeks_types.append(endeks_turu)
 
                 if suspicious_endeks_types:
                     suspicious_tesisats[tesisat] = ", ".join(suspicious_endeks_types)
