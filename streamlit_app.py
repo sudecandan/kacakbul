@@ -193,16 +193,14 @@ if st.button("🚀 Analizi Başlat"):
         def p_analizi(df, esik_orani, alt_esik_sayisi):
             suspicious = []
 
-            # Veriyi temizleme
-            df["Okunan sayaç durumu"] = (
-                df["Okunan sayaç durumu"]
-                .astype(str)
-                .str.replace(",", ".", regex=True)
-                .str.extract(r'(\d+\.\d+|\d+)')[0]  # Sadece sayıları al, metinleri temizle
-                .astype(float, errors='coerce')  # Sayısal veriye çevirirken hataları yok say
-            )
+            # **Veri temizleme işlemi**
+            df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".", regex=True)
 
-            df = df.dropna(subset=["Okunan sayaç durumu"])  # NaN olan satırları at
+            # **Sadece sayısal değerleri al ve hatalı olanları temizle**
+            df["Okunan sayaç durumu"] = pd.to_numeric(df["Okunan sayaç durumu"], errors="coerce")
+            
+            # **NaN olan satırları temizle**
+            df = df.dropna(subset=["Okunan sayaç durumu"])
 
             for tesisat, group in df.groupby("Tesisat"):
                 p_values = group[group["Endeks türü"] == "P"]["Okunan sayaç durumu"].dropna().tolist()
