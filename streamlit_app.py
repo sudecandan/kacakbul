@@ -140,7 +140,7 @@ if zblir_file and st.button("📌 ZBLIR_002 Verilerini Düzenle"):
 
 
 # 📊 Kullanıcıdan analiz için giriş al
-col1, col2 = st.columns([1, 1])  # Sol tarafı genişlettik
+col1, col2 = st.columns([1, 1])  
 
 # 🟢 **Analiz Seçenekleri**
 with col1:
@@ -168,8 +168,8 @@ with col1:
 # 🔵 **Düşüş Parametreleri**
 with col2:
     st.markdown("#### 📉 Düşüş Parametreleri")
-    decrease_percentage = st.number_input("📉 Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=10)
-    decrease_count = st.number_input("🔄 Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=2)
+    decrease_percentage = st.number_input("📉 Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
+    decrease_count = st.number_input("🔄 Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=3)
 
 # **Seçili analizleri belirleme**
 selected_analysis = [key for key, value in st.session_state.selected_analysis.items() if value]
@@ -185,55 +185,84 @@ selected_analysis = [key for key, value in st.session_state.selected_analysis.it
 
 
 
+#BURAYA KADAR DA OKEYYYY GİBİ
 
 
+# 🚀 **P Analizi Fonksiyonu**
+def p_analizi(extracted_files, esik_orani, alt_esik_sayisi):
+    suspicious_tesisats = []
 
+    for file_name, file_data in extracted_files.items():
+        df = pd.read_csv(BytesIO(file_data), delimiter=';', encoding='utf-8')
 
+        # **Sayısal verileri doğru şekilde parse et**
+        df['Okunan sayaç durumu'] = df['Okunan sayaç durumu'].astype(str).str.replace(',', '.').astype(float)
 
+        for tesisat, group in df.groupby('Tesisat'):
+            p_values = group[group['Endeks türü'] == 'P']['Okunan sayaç durumu'].dropna().tolist()
 
-# **Analizi Başlat Butonu**
-if st.button("🚀 Analizi Başlat"):
-    if "P" in selected_analysis:
-        # **P Analizi**
-        def p_analizi(df, esik_orani, alt_esik_sayisi):
-            suspicious = []
-            df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".").astype(float)
-            for tesisat, group in df.groupby("Tesisat"):
-                p_values = group[group["Endeks türü"] == "P"]["Okunan sayaç durumu"].dropna().tolist()
-                if not p_values:
-                    continue
-                avg_p = sum(p_values) / len(p_values)
-                threshold = avg_p * (1 - esik_orani / 100)
-                below_threshold_count = sum(1 for val in p_values if val < threshold)
+            if not p_values:
+                continue  # Eğer P değeri yoksa atla
+
+            p_values_nonzero = [val for val in p_values if val > 0]
+
+            if len(p_values_nonzero) > 0:
+                p_avg = sum(p_values_nonzero) / len(p_values_nonzero)
+                esik_deger = p_avg * (1 - esik_orani)
+
+                below_threshold_count = sum(1 for val in p_values_nonzero if val < esik_deger)
+
+                # Son üç P değerinin ortalamanın üstünde olup olmadığını kontrol et
+                last_three_values = p_values_nonzero[-3:] if len(p_values_nonzero) >= 3 else []
+                if all(val > p_avg for val in last_three_values):
+                    continue  # Son üç değer ortalamanın üstündeyse şüpheli listeye ekleme
+
                 if below_threshold_count > alt_esik_sayisi:
-                    suspicious.append([tesisat])
-            return pd.DataFrame(suspicious, columns=["Şüpheli Tesisat"])
+                    suspicious_tesisats.append([tesisat])
 
-        df_suspicious_p = p_analizi(df_el31, decrease_percentage, decrease_count)
-        st.success("✅ P Analizi Tamamlandı!")
-        st.dataframe(df_suspicious_p)
-        st.download_button("📥 P Analizi Sonuçlarını İndir", df_suspicious_p.to_csv(sep=";", index=False).encode("utf-8"), "p_analizi.csv", "text/csv")
+    # Şüpheli tesisatları yeni bir CSV dosyasına yazdır
+    suspicious_df = pd.DataFrame(suspicious_tesisats, columns=['Şüpheli Tesisat'])
+    return suspicious_df
 
-    if any(t in selected_analysis for t in ["T1", "T2", "T3"]):
-        # **T Analizi**
-        def t_analizi(df, threshold_ratio, below_threshold_limit):
-            suspicious = []
-            for tesisat, group in df.groupby("Tesisat"):
-                for endeks in ["T1", "T2", "T3"]:
-                    values = group[group["Endeks Türü"] == endeks]["Ortalama Tüketim"].dropna().tolist()
-                    if not values:
-                        continue
-                    avg_value = sum(values) / len(values)
-                    threshold = avg_value * (1 - threshold_ratio / 100)
-                    below_threshold_count = sum(1 for val in values if val < threshold)
-                    if below_threshold_count > below_threshold_limit:
-                        suspicious.append([tesisat, endeks])
-            return pd.DataFrame(suspicious, columns=["Şüpheli Tesisat", "Endeks Türü"])
+# 🚀 **Analizi Başlat Butonu**
+if st.button("🚀 Analizi Başlat"):
+    if "P Analizi" in selected_analysis and uploaded_zip:
+        with zipfile.ZipFile(uploaded_zip, 'r') as zip_ref:
+            extracted_files = {name: zip_ref.read(name) for name in zip_ref.namelist() if name.endswith(".csv")}
 
-        df_suspicious_t = t_analizi(df_zblir, decrease_percentage, decrease_count)
-        st.success("✅ T Analizi Tamamlandı!")
-        st.dataframe(df_suspicious_t)
-        st.download_button("📥 T Analizi Sonuçlarını İndir", df_suspicious_t.to_csv(sep=";", index=False).encode("utf-8"), "t_analizi.csv", "text/csv")
+        st.success(f"✅ {len(extracted_files)} dosya başarıyla açıldı!")
+
+        # **P Analizini Çalıştır**
+        df_suspicious_p = p_analizi(extracted_files, decrease_percentage, decrease_count)
+
+        if not df_suspicious_p.empty:
+            st.success("✅ P Analizi Tamamlandı!")
+            st.dataframe(df_suspicious_p)
+
+            # **İndirme için CSV Dosyası Hazırla**
+            csv_buffer = BytesIO()
+            df_suspicious_p.to_csv(csv_buffer, sep=";", index=False, encoding="utf-8")
+            csv_buffer.seek(0)
+
+            st.download_button(
+                "📥 P Analizi Sonuçlarını İndir",
+                csv_buffer,
+                "p_analizi_sonuclar.csv",
+                "text/csv"
+            )
+        else:
+            st.warning("❌ Şüpheli tesisat bulunamadı!")
+
+
+
+
+
+
+
+
+
+
+
 
 
 
