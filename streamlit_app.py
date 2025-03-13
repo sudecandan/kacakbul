@@ -192,8 +192,17 @@ selected_analysis = [key for key, value in st.session_state.selected_analysis.it
 if st.button("🚀 Analizi Başlat"):
     combined_results = {}
 
-    # **P Analizi Seçildiyse Çalıştır**
+    # **EL31 Dosyası Kontrolü**
     if "P Analizi" in selected_analysis and el31_file is not None:
+        try:
+            df_el31 = pd.read_csv(el31_file, delimiter=";", encoding="utf-8")
+            if df_el31.empty:
+                st.error("🚨 EL31 dosyası boş! Lütfen geçerli bir dosya yükleyin.")
+                st.stop()
+        except pd.errors.EmptyDataError:
+            st.error("🚨 EL31 dosyası okunamadı! Dosya boş veya hatalı olabilir.")
+            st.stop()
+
         def p_analizi(df, esik_orani, alt_esik_sayisi):
             suspicious = {}
 
@@ -223,9 +232,8 @@ if st.button("🚀 Analizi Başlat"):
 
             return suspicious
 
-        df_el31 = pd.read_csv(el31_file, delimiter=";", encoding="utf-8")
         p_results = p_analizi(df_el31, decrease_percentage, decrease_count)
-        
+
         # **Sonuçları birleştir**
         for tesisat, analiz in p_results.items():
             if tesisat in combined_results:
@@ -233,8 +241,17 @@ if st.button("🚀 Analizi Başlat"):
             else:
                 combined_results[tesisat] = analiz
 
-    # **T1, T2 veya T3 Analizlerinden En Az Biri Seçildiyse Çalıştır**
+    # **ZBLIR Dosyası Kontrolü**
     if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]) and zblir_file is not None:
+        try:
+            df_zblir = pd.read_csv(zblir_file, delimiter=";", encoding="utf-8")
+            if df_zblir.empty:
+                st.error("🚨 ZBLIR_002 dosyası boş! Lütfen geçerli bir dosya yükleyin.")
+                st.stop()
+        except pd.errors.EmptyDataError:
+            st.error("🚨 ZBLIR_002 dosyası okunamadı! Dosya boş veya hatalı olabilir.")
+            st.stop()
+
         def calc_avg(df, endeks_turu, threshold_ratio):
             filtered_df = df[df["Endeks Türü"] == endeks_turu].copy()
 
@@ -295,7 +312,6 @@ if st.button("🚀 Analizi Başlat"):
 
             return suspicious_tesisats
 
-        df_zblir = pd.read_csv(zblir_file, delimiter=";", encoding="utf-8")
         t_results = analyze_tesisat_data(df_zblir, decrease_percentage, decrease_count)
 
         # **Sonuçları birleştir**
