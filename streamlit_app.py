@@ -245,7 +245,7 @@ if st.button("🚀 Analizi Başlat"):
     # **T Analizi Fonksiyonları**
 
         def calc_avg(df, endeks_turu, threshold_ratio):
-        """Her endeks türü için ortalama tüketimi ve eşik değerini hesaplar."""
+            """Her endeks türü için ortalama tüketimi ve eşik değerini hesaplar."""
             filtered_df = df[df["Endeks Türü"] == endeks_turu]
 
             if filtered_df.empty:
