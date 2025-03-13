@@ -187,14 +187,22 @@ selected_analysis = [key for key, value in st.session_state.selected_analysis.it
 
 # **Analizi Başlat Butonu**
 if st.button("🚀 Analizi Başlat"):
-    
+
     # **P Analizi Seçildiyse Çalıştır**
     if "P Analizi" in selected_analysis:
         def p_analizi(df, esik_orani, alt_esik_sayisi):
             suspicious = []
 
             # Veriyi temizleme
-            df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".").astype(float)
+            df["Okunan sayaç durumu"] = (
+                df["Okunan sayaç durumu"]
+                .astype(str)
+                .str.replace(",", ".", regex=True)
+                .str.extract(r'(\d+\.\d+|\d+)')[0]  # Sadece sayıları al, metinleri temizle
+                .astype(float, errors='ignore')  # Sayısal veriye çevirirken hataları yok say
+            )
+
+            df = df.dropna(subset=["Okunan sayaç durumu"])  # NaN olan satırları at
 
             for tesisat, group in df.groupby("Tesisat"):
                 p_values = group[group["Endeks türü"] == "P"]["Okunan sayaç durumu"].dropna().tolist()
@@ -240,10 +248,9 @@ if st.button("🚀 Analizi Başlat"):
         else:
             st.warning("⚠️ P Analizi sonucunda şüpheli tesisat bulunamadı!")
 
-
+    # **T1, T2 veya T3 Analizlerinden En Az Biri Seçildiyse Çalıştır**
     if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]):
-    # **T Analizi Fonksiyonları**
-
+        
         def calc_avg(df, endeks_turu, threshold_ratio):
             """Her endeks türü için ortalama tüketimi ve eşik değerini hesaplar."""
             filtered_df = df[df["Endeks Türü"] == endeks_turu]
@@ -251,12 +258,12 @@ if st.button("🚀 Analizi Başlat"):
             if filtered_df.empty:
                 return None  # Eğer bu endeks türü yoksa işlem yapma
 
-        # "Ortalama Tüketim" sütununu sayısal formata çevir
+            # "Ortalama Tüketim" sütununu sayısal formata çevir
             filtered_df["Ortalama Tüketim"] = pd.to_numeric(
                 filtered_df["Ortalama Tüketim"].astype(str).str.replace(',', '.'), errors='coerce'
             )
 
-        # Sıfır olmayan tüketim değerlerini filtrele
+            # Sıfır olmayan tüketim değerlerini filtrele
             nonzero_values = filtered_df[filtered_df["Ortalama Tüketim"] > 0]["Ortalama Tüketim"].tolist()
 
             if not nonzero_values:
@@ -268,44 +275,44 @@ if st.button("🚀 Analizi Başlat"):
             return avg_value, threshold_value
 
         def analyze_tesisat_data(df, threshold_ratio, below_threshold_limit):
-        """T1, T2, T3 analizlerini yaparak şüpheli tesisatları belirler."""
+            """T1, T2, T3 analizlerini yaparak şüpheli tesisatları belirler."""
             suspicious_tesisats = {}
 
             for tesisat, group in df.groupby("Tesisat"):
                 suspicious_endeks_types = []
 
-                for endeks_turu in ["T1", "T2", "T3"]:
+                for endeks_turu in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]:
                     if endeks_turu not in selected_analysis:  # Kullanıcının seçtiği analizleri kontrol et
                         continue
 
-                    result = calc_avg(group, endeks_turu, threshold_ratio)
+                    result = calc_avg(group, endeks_turu.replace(" Analizi", ""), threshold_ratio)
 
                     if result is None:
                         continue  # Eğer bu endeks türü için veri yoksa atla
 
                     avg_value, threshold_value = result
 
-                # Eşik değerinin altına düşen tüketim sayısını hesapla
+                    # Eşik değerinin altına düşen tüketim sayısını hesapla
                     below_threshold_count = sum(
-                        1 for val in group[group["Endeks Türü"] == endeks_turu]["Ortalama Tüketim"].dropna()
+                        1 for val in group[group["Endeks Türü"] == endeks_turu.replace(" Analizi", "")]["Ortalama Tüketim"].dropna()
                         if val > 0 and val < threshold_value
                     )
 
-                # Eğer belirlenen eşik altı sayısından fazla düşük değer varsa şüpheli olarak ekle
+                    # Eğer belirlenen eşik altı sayısından fazla düşük değer varsa şüpheli olarak ekle
                     if below_threshold_count > below_threshold_limit:
-                        suspicious_endeks_types.append(endeks_turu)
+                        suspicious_endeks_types.append(endeks_turu.replace(" Analizi", ""))
 
                 if suspicious_endeks_types:
                     suspicious_tesisats[tesisat] = ", ".join(suspicious_endeks_types)
 
-        # Şüpheli tesisatları DataFrame olarak kaydet
+            # Şüpheli tesisatları DataFrame olarak kaydet
             suspicious_df = pd.DataFrame(list(suspicious_tesisats.items()), columns=["Şüpheli Tesisat", "Şüpheli Endeks Türleri"])
             return suspicious_df
 
-    # **T Analizini Çalıştır**
+        # **T Analizini Çalıştır**
         df_suspicious_t = analyze_tesisat_data(df_zblir, decrease_percentage, decrease_count)
 
-    # **Sonuçları Göster**
+        # **Sonuçları Göster**
         if not df_suspicious_t.empty:
             st.success("✅ T Analizi Tamamlandı!")
             st.dataframe(df_suspicious_t)
@@ -317,6 +324,3 @@ if st.button("🚀 Analizi Başlat"):
             )
         else:
             st.warning("⚠️ T Analizi sonucunda şüpheli tesisat bulunamadı!")
-
-
-
