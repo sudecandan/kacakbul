@@ -189,15 +189,25 @@ selected_analysis = [key for key, value in st.session_state.selected_analysis.it
 
 # **Analizi Başlat Butonu**
 if st.button("🚀 Analizi Başlat"):
-    
-    # **P Analizi Seçildiyse Çalıştır**
     if "P Analizi" in selected_analysis:
         # **P Analizi Fonksiyonu**
         def p_analizi(df, esik_orani, alt_esik_sayisi):
             suspicious = []
 
-            # Veriyi temizleme
-            df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".").astype(float)
+            # **"Okunan sayaç durumu" sütununun temizlenmesi**
+            df["Okunan sayaç durumu"] = (
+                df["Okunan sayaç durumu"]
+                .astype(str)                  # Veriyi önce string formatına çevir
+                .str.replace(",", ".")        # Virgülleri nokta ile değiştir
+                .str.replace(r"[^\d\.]", "", regex=True)  # Sayı olmayan karakterleri kaldır
+            )
+
+            # **Hatalı veya boş değerleri temizle**
+            df = df[df["Okunan sayaç durumu"].str.strip() != ""]
+            df["Okunan sayaç durumu"] = pd.to_numeric(df["Okunan sayaç durumu"], errors="coerce")
+
+            # **NaN değerleri içeren satırları temizle**
+            df = df.dropna(subset=["Okunan sayaç durumu"])
 
             for tesisat, group in df.groupby("Tesisat"):
                 p_values = group[group["Endeks türü"] == "P"]["Okunan sayaç durumu"].dropna().tolist()
@@ -242,13 +252,3 @@ if st.button("🚀 Analizi Başlat"):
             )
         else:
             st.warning("⚠️ P Analizi sonucunda şüpheli tesisat bulunamadı!")
-
-
-
-
-
-
-
-
-
-
