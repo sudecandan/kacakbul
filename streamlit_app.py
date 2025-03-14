@@ -231,7 +231,7 @@ if st.button("🚀 Analizi Başlat"):
 
         # **P Analizini Çalıştır**
         p_analizi(df_el31, decrease_percentage, decrease_count)
-        st.write(f"P Analizi tamamlandı, {len(combined_results)} tesisat eklendi.")  # Debugging
+        st.write(f"P Analizi tamamlandı, {len(combined_results)} tesisat şüpheli bulundu.")  # Debugging
 
     # **T1, T2 veya T3 Analizlerinden En Az Biri Seçildiyse Çalıştır**
     if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]):
@@ -289,7 +289,7 @@ if st.button("🚀 Analizi Başlat"):
 
         # **T Analizini Çalıştır**
         analyze_tesisat_data(df_zblir, decrease_percentage, decrease_count)
-        st.write(f"T Analizi tamamlandı, {len(combined_results)} tesisat eklendi.")  # Debugging
+        st.write(f"T Analizi tamamlandı, {len(combined_results)} tesisat şüpheli bulundu.")  # Debugging
 
     # **Sonuçları Tek Bir DataFrame'de Birleştirme**
     if combined_results:
