@@ -200,24 +200,19 @@ if st.button("🚀 Analizi Başlat"):
 
             # **Veri temizleme işlemi**
             df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".", regex=True)
-
-            # **Sadece sayısal değerleri al ve hatalı olanları temizle**
             df["Okunan sayaç durumu"] = pd.to_numeric(df["Okunan sayaç durumu"], errors="coerce")
-            
-            # **NaN olan satırları temizle**
             df = df.dropna(subset=["Okunan sayaç durumu"])
 
             for tesisat, group in df.groupby("Tesisat"):
                 p_values = group[group["Endeks türü"] == "P"]["Okunan sayaç durumu"].dropna().tolist()
-
                 if not p_values:
-                    continue  # Eğer "P" değeri yoksa atla
+                    continue
 
                 # **Ortalama P değeri hesapla**
                 p_values_nonzero = [val for val in p_values if val > 0]
                 if len(p_values_nonzero) > 0:
                     p_avg = sum(p_values_nonzero) / len(p_values_nonzero)
-                    esik_deger = p_avg * (1 - esik_orani / 100)  # Kullanıcının belirlediği düşüş yüzdesine göre eşik belirle
+                    esik_deger = p_avg * (1 - esik_orani / 100)
 
                     # **Eşik altında kalan değerlerin sayısını hesapla**
                     below_threshold_count = sum(1 for val in p_values_nonzero if val < esik_deger)
@@ -225,11 +220,18 @@ if st.button("🚀 Analizi Başlat"):
                     # **Son 3 değer ortalamadan büyükse şüpheli listeye ekleme**
                     last_three_values = p_values_nonzero[-3:] if len(p_values_nonzero) >= 3 else []
                     if all(val > p_avg for val in last_three_values):
-                        continue  # Eğer son 3 değer ortalamadan büyükse, tesisat şüpheli olarak eklenmez
+                        continue
 
                     # **Şüpheli tesisatı ekle**
                     if below_threshold_count > alt_esik_sayisi:
-                        combined_results[tesisat] = ["P Analizi"]
+                        if tesisat in combined_results:
+                            combined_results[tesisat].append("P Analizi")
+                        else:
+                            combined_results[tesisat] = ["P Analizi"]
+
+        # **P Analizini Çalıştır**
+        p_analizi(df_el31, decrease_percentage, decrease_count)
+        st.write(f"P Analizi tamamlandı, {len(combined_results)} tesisat eklendi.")  # Debugging
 
     # **T1, T2 veya T3 Analizlerinden En Az Biri Seçildiyse Çalıştır**
     if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]):
@@ -237,28 +239,20 @@ if st.button("🚀 Analizi Başlat"):
         def calc_avg(df, endeks_turu, threshold_ratio):
             """Her endeks türü için ortalama tüketimi ve eşik değerini hesaplar."""
             filtered_df = df[df["Endeks Türü"] == endeks_turu].copy()
-
             if filtered_df.empty:
-                return None  # Eğer bu endeks türü yoksa işlem yapma
+                return None
 
-            # "Ortalama Tüketim" sütununu temizle ve sayısal formata çevir
             filtered_df["Ortalama Tüketim"] = pd.to_numeric(
-                filtered_df["Ortalama Tüketim"]
-                .astype(str)
-                .str.replace(",", ".", regex=True)
-                .str.extract(r'(\d+\.\d+|\d+)')[0], 
-                errors="coerce"
+                filtered_df["Ortalama Tüketim"].astype(str).str.replace(",", ".", regex=True), errors="coerce"
             )
-
-            # NaN ve sıfır olmayan tüketim değerlerini filtrele
             nonzero_values = filtered_df["Ortalama Tüketim"].dropna()
             nonzero_values = nonzero_values[nonzero_values > 0].tolist()
 
             if not nonzero_values:
-                return None  # Eğer sıfır olmayan veri yoksa işlem yapma
+                return None
 
-            avg_value = sum(nonzero_values) / len(nonzero_values)  # Ortalama hesapla
-            threshold_value = avg_value * (1 - threshold_ratio / 100)  # Kullanıcıdan alınan yüzdelik değere göre eşik hesapla
+            avg_value = sum(nonzero_values) / len(nonzero_values)
+            threshold_value = avg_value * (1 - threshold_ratio / 100)
 
             return avg_value, threshold_value
 
@@ -268,35 +262,34 @@ if st.button("🚀 Analizi Başlat"):
                 suspicious_endeks_types = []
 
                 for endeks_turu in ["T1", "T2", "T3"]:
-                    if endeks_turu + " Analizi" not in selected_analysis:  # Kullanıcının seçtiği analizleri kontrol et
+                    if endeks_turu + " Analizi" not in selected_analysis:
                         continue
 
                     result = calc_avg(group, endeks_turu, threshold_ratio)
-
                     if result is None:
-                        continue  # Eğer bu endeks türü için veri yoksa atla
+                        continue
 
                     avg_value, threshold_value = result
 
-                    # Eşik değerinin altına düşen tüketim sayısını hesapla
                     below_threshold_count = sum(
                         1
                         for val in pd.to_numeric(
                             group[group["Endeks Türü"] == endeks_turu]["Ortalama Tüketim"]
                             .astype(str)
-                            .str.replace(",", ".", regex=True)
-                            .str.extract(r'(\d+\.\d+|\d+)')[0], 
-                            errors="coerce"
+                            .str.replace(",", ".", regex=True), errors="coerce"
                         ).dropna()
                         if val > 0 and val < threshold_value
                     )
 
-                    # Eğer belirlenen eşik altı sayısından fazla düşük değer varsa şüpheli olarak ekle
                     if below_threshold_count > below_threshold_limit:
                         if tesisat in combined_results:
                             combined_results[tesisat].append(endeks_turu)
                         else:
                             combined_results[tesisat] = [endeks_turu]
+
+        # **T Analizini Çalıştır**
+        analyze_tesisat_data(df_zblir, decrease_percentage, decrease_count)
+        st.write(f"T Analizi tamamlandı, {len(combined_results)} tesisat eklendi.")  # Debugging
 
     # **Sonuçları Tek Bir DataFrame'de Birleştirme**
     if combined_results:
@@ -316,4 +309,3 @@ if st.button("🚀 Analizi Başlat"):
         )
     else:
         st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
-
