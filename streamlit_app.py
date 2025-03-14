@@ -225,9 +225,9 @@ if st.button("🚀 Analizi Başlat"):
                     # **Şüpheli tesisatı ekle**
                     if below_threshold_count > alt_esik_sayisi:
                         if tesisat in combined_results:
-                            combined_results[tesisat].append("P Analizi")
+                            combined_results[tesisat].append("P")
                         else:
-                            combined_results[tesisat] = ["P Analizi"]
+                            combined_results[tesisat] = ["P"]
 
         # **P Analizini Çalıştır**
         p_analizi(df_el31, decrease_percentage, decrease_count)
