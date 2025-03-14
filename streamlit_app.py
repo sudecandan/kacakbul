@@ -161,8 +161,20 @@ if st.button("🚀 Analizi Başlat"):
         df_combined = pd.DataFrame(list(combined_results.items()), columns=["Şüpheli Tesisat", "Şüpheli Analiz Türleri"])
         df_combined["Şüpheli Analiz Türleri"] = df_combined["Şüpheli Analiz Türleri"].apply(lambda x: ", ".join(x))
 
+        # **İndeksi 1’den başlat**
+        df_combined.index += 1  
+
+        # **Sonuçları Göster**
         st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_combined)} şüpheli tesisat bulundu.**")
         st.dataframe(df_combined)
-        st.download_button("📥 Analiz Sonuçlarını İndir", df_combined.to_csv(sep=";", index=False).encode("utf-8"), "analiz_sonuclari.csv", "text/csv")
+
+        # **Tek bir CSV dosyası olarak indir**
+        st.download_button(
+            "📥 Analiz Sonuçlarını İndir",
+            df_combined.to_csv(sep=";", index=True).encode("utf-8"),  # index=True ile yeni indeksleri de ekliyoruz
+            "analiz_sonuclari.csv",
+            "text/csv"
+        )
     else:
         st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
+
