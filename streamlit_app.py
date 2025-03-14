@@ -191,6 +191,8 @@ selected_analysis = [key for key, value in st.session_state.selected_analysis.it
 # **Analizi Başlat Butonu**
 if st.button("🚀 Analizi Başlat"):
 
+    combined_results = {}
+
     # **P Analizi Seçildiyse Çalıştır**
     if "P Analizi" in selected_analysis:
         def p_analizi(df, esik_orani, alt_esik_sayisi):
@@ -225,29 +227,9 @@ if st.button("🚀 Analizi Başlat"):
                     if all(val > p_avg for val in last_three_values):
                         continue  # Eğer son 3 değer ortalamadan büyükse, tesisat şüpheli olarak eklenmez
 
-                    # **Şüpheli tesisatı listeye ekle**
+                    # **Şüpheli tesisatı ekle**
                     if below_threshold_count > alt_esik_sayisi:
-                        suspicious.append([tesisat])
-
-            # **Şüpheli tesisatları DataFrame olarak kaydet**
-            suspicious_df = pd.DataFrame(suspicious, columns=["Şüpheli Tesisat"])
-            return suspicious_df
-
-        # **P Analizini Çalıştır**
-        df_suspicious_p = p_analizi(df_el31, decrease_percentage, decrease_count)
-
-        # **Sonuçları Göster**
-        if not df_suspicious_p.empty:
-            st.success("✅ P Analizi Tamamlandı!")
-            st.dataframe(df_suspicious_p)
-            st.download_button(
-                "📥 P Analizi Sonuçlarını İndir",
-                df_suspicious_p.to_csv(sep=";", index=False).encode("utf-8"),
-                "p_analizi.csv",
-                "text/csv"
-            )
-        else:
-            st.warning("⚠️ P Analizi sonucunda şüpheli tesisat bulunamadı!")
+                        combined_results[tesisat] = ["P Analizi"]
 
     # **T1, T2 veya T3 Analizlerinden En Az Biri Seçildiyse Çalıştır**
     if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]):
@@ -282,8 +264,6 @@ if st.button("🚀 Analizi Başlat"):
 
         def analyze_tesisat_data(df, threshold_ratio, below_threshold_limit):
             """T1, T2, T3 analizlerini yaparak şüpheli tesisatları belirler."""
-            suspicious_tesisats = {}
-
             for tesisat, group in df.groupby("Tesisat"):
                 suspicious_endeks_types = []
 
@@ -313,29 +293,27 @@ if st.button("🚀 Analizi Başlat"):
 
                     # Eğer belirlenen eşik altı sayısından fazla düşük değer varsa şüpheli olarak ekle
                     if below_threshold_count > below_threshold_limit:
-                        suspicious_endeks_types.append(endeks_turu)
+                        if tesisat in combined_results:
+                            combined_results[tesisat].append(endeks_turu)
+                        else:
+                            combined_results[tesisat] = [endeks_turu]
 
-                if suspicious_endeks_types:
-                    suspicious_tesisats[tesisat] = ", ".join(suspicious_endeks_types)
-
-            # Şüpheli tesisatları DataFrame olarak kaydet
-            suspicious_df = pd.DataFrame(
-                list(suspicious_tesisats.items()), columns=["Şüpheli Tesisat", "Şüpheli Endeks Türleri"]
-            )
-            return suspicious_df
-
-        # **T Analizini Çalıştır**
-        df_suspicious_t = analyze_tesisat_data(df_zblir, decrease_percentage, decrease_count)
+    # **Sonuçları Tek Bir DataFrame'de Birleştirme**
+    if combined_results:
+        df_combined = pd.DataFrame(list(combined_results.items()), columns=["Şüpheli Tesisat", "Şüpheli Analiz Türleri"])
+        df_combined["Şüpheli Analiz Türleri"] = df_combined["Şüpheli Analiz Türleri"].apply(lambda x: ", ".join(x))
 
         # **Sonuçları Göster**
-        if not df_suspicious_t.empty:
-            st.success("✅ T Analizi Tamamlandı!")
-            st.dataframe(df_suspicious_t)
-            st.download_button(
-                "📥 T Analizi Sonuçlarını İndir",
-                df_suspicious_t.to_csv(sep=";", index=False).encode("utf-8"),
-                "t_analizi.csv",
-                "text/csv"
-            )
-        else:
-            st.warning("⚠️ T Analizi sonucunda şüpheli tesisat bulunamadı!")
+        st.success("✅ Analizler Tamamlandı!")
+        st.dataframe(df_combined)
+
+        # **Tek bir CSV dosyası olarak indir**
+        st.download_button(
+            "📥 Analiz Sonuçlarını İndir",
+            df_combined.to_csv(sep=";", index=False).encode("utf-8"),
+            "analiz_sonuclari.csv",
+            "text/csv"
+        )
+    else:
+        st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
+
