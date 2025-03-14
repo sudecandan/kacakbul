@@ -165,28 +165,28 @@ with col1:
 
     st.button("Tümünü Seç", on_click=toggle_all)
 
+
+
+
+
+
 # 🔵 **Düşüş Parametreleri**
+st.markdown("### 📉 Düşüş Parametreleri")
+
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.markdown("#### 📉 **P Analizi İçin**")
+    decrease_percentage_p = st.number_input("📉 P Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
+    decrease_count_p = st.number_input("🔄 P Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=3)
+
 with col2:
-    st.markdown("#### 📉 Düşüş Parametreleri")
-    decrease_percentage = st.number_input("📉 Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
-    decrease_count = st.number_input("🔄 Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=3)
+    st.markdown("#### 📉 **T Analizi İçin**")
+    decrease_percentage_t = st.number_input("📉 T Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=50)
+    decrease_count_t = st.number_input("🔄 T Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=5)
 
 # **Seçili analizleri belirleme**
 selected_analysis = [key for key, value in st.session_state.selected_analysis.items() if value]
-
-
-
-
-
-
-
-
-
-
-#BURAYA KADAR DA OKEYYYY GİBİ
-
-
-
 
 # **Analizi Başlat Butonu**
 if st.button("🚀 Analizi Başlat"):
@@ -281,4 +281,3 @@ if st.button("🚀 Analizi Başlat"):
         st.success("✅ Analizler Tamamlandı!")
         st.dataframe(df_combined)
         st.download_button("📥 Analiz Sonuçlarını İndir", df_combined.to_csv(sep=";", index=False).encode("utf-8"), "analiz_sonuclari.csv", "text/csv")
-
