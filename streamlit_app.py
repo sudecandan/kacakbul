@@ -388,7 +388,7 @@ def clean_zdm240(df):
         df[col] = df[col].str.replace('.', '', regex=False)
 
     # **Aynı tesisat numarası ve mali yıl için değerleri toplama**
-    df_grouped = df.groupby(["Tesisat Numarası", "Mali Yıl"], as_index=False).sum()
+    df_grouped = df.groupby(["Tesisat", "Mali yıl"], as_index=False).sum()
     
     return df_grouped
 
@@ -399,7 +399,7 @@ def calculate_quarters(df):
     df["Q3"] = df["Tük_Eylül"] + df["Tük_Ekim"] + df["Tük_Kasım"]
     df["Q4"] = df["Tük_Aralık"] + df["Tük_Ocak"] + df["Tük_Şubat"]
     
-    return df[["Tesisat Numarası", "Mali Yıl", "Q1", "Q2", "Q3", "Q4"]]
+    return df[["Tesisat", "Mali yıl", "Q1", "Q2", "Q3", "Q4"]]
 
 # 📌 **Düzenlenmiş Veriyi ZIP Olarak İndirme**
 if zdm240_file and st.button("📌 ZDM240 Verilerini Düzenle"):
@@ -424,7 +424,7 @@ q_decrease_percentage = st.number_input("📉 Q Yüzde Kaç Düşüş?", min_val
 def detect_suspicious_quarters(df, threshold):
     suspicious = []
     
-    for tesisat, group in df.groupby("Tesisat Numarası"):
+    for tesisat, group in df.groupby("Tesisat"):
         for quarter in ["Q1", "Q2", "Q3", "Q4"]:
             values = group[quarter].dropna()
             if len(values) < 2:
