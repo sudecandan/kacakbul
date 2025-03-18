@@ -381,24 +381,27 @@ if st.session_state["admin_authenticated"]:
 
 
 
-# **Analiz Sonuçlarını Otomatik Okuma**
+# **P ve T analizleri tamamlandı mı?**
 analiz_sonuclari_path = "analiz_sonuclari.csv"
 if os.path.exists(analiz_sonuclari_path):
     df_analiz_sonuclari = pd.read_csv(analiz_sonuclari_path, delimiter=";", encoding="utf-8")
-    tesisatlar = df_analiz_sonuclari["Şüpheli Tesisat"].unique()  # Şüpheli tesisatlar listesi
+    tesisatlar = df_analiz_sonuclari["Şüpheli Tesisat"].unique()  # Sadece şüpheli tesisatlar
+    st.success(f"✅ P ve T analizleri tamamlandı! {len(tesisatlar)} tesisat Q analizi için işleniyor.")
 else:
-    tesisatlar = None  # Eğer analiz sonuçları yoksa Q analizi yapma
+    tesisatlar = None  # Eğer analiz sonuçları yoksa Q analizi yapılmaz
+    st.warning("⚠️ P ve T analizleri tamamlanmadı! Önce analizleri çalıştırmalısınız.")
 
+# **Q Analizi Butonu**
+if tesisatlar is not None and zdm240_file:
+    if st.button("📌 Q Analizini Başlat"):
+        # 📂 ZDM240 verisini oku
+        df_zdm240 = pd.read_csv(zdm240_file, delimiter=";", encoding="utf-8", low_memory=False)
 
-    # **Q Analizi Yapılacak mı?**
-    if tesisatlar is not None:
-        st.subheader("📉 **Q Analizi - Şüpheli Tesisatlar Üzerinde**")
-
-        # 🔹 ZDM240 içinden sadece analiz_sonuclari.csv'de bulunan tesisatları filtrele
+        # 🔹 Sadece analiz_sonuclari.csv'de yer alan tesisatları filtrele
         df_zdm240_filtered = df_zdm240[df_zdm240["Tesisat"].isin(tesisatlar)]
 
         if df_zdm240_filtered.empty:
-            st.warning("⚠️ Analiz sonuçlarındaki tesisatlar ZDM240 dosyasında bulunamadı!")
+            st.warning("⚠️ Q Analizi için uygun tesisat bulunamadı!")
         else:
             # 🔹 Sayısal sütunları temizle: Binlik noktaları kaldır, ondalık virgülleri koru
             def clean_numeric_columns(df):
@@ -464,6 +467,3 @@ else:
                 st.download_button("📥 Şüpheli Tesisatları İndir", csv_suspicious, "supheli_tesisatlar.csv", "text/csv")
             else:
                 st.success("✅ Şüpheli tesisat bulunamadı.")
-
-
-
