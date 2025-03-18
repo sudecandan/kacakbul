@@ -318,31 +318,23 @@ for file in FILE_PATHS.values():
     if not os.path.exists(file):
         pd.DataFrame(columns=["Değer"]).to_csv(file, index=False)
 
-# 🟡 **Admin Paneli Aç/Kapat Durumu**
-if "show_admin_login" not in st.session_state:
-    st.session_state["show_admin_login"] = False
+# --- SESSION STATE (Admin Giriş için) ---
+if 'admin_authenticated' not in st.session_state:
+    st.session_state.admin_authenticated = False
 
-if "admin_logged_in" not in st.session_state:
-    st.session_state["admin_logged_in"] = False
-
-# 🟢 **Admin Girişi**
-st.sidebar.subheader("🔑 Admin Kontrol")
-
-if not st.session_state["show_admin_login"]:
-    if st.sidebar.button("🔑 Admin Girişi"):
-        st.session_state["show_admin_login"] = True
-
-# 🔵 **Admin Giriş Ekranı**
-if st.session_state["show_admin_login"] and not st.session_state["admin_logged_in"]:
-    st.sidebar.subheader("🔒 Admin Girişi")
-    admin_user = st.sidebar.text_input("Kullanıcı Adı")
-    admin_pass = st.sidebar.text_input("Şifre", type="password")
+# --- ADMIN PANELI GIRIŞI ---
+def admin_login():
+    st.sidebar.subheader("🔐 Admin Girişi")
+    username = st.sidebar.text_input("Kullanıcı Adı")
+    password = st.sidebar.text_input("Şifre", type="password")
     if st.sidebar.button("Giriş Yap"):
-        if admin_user == "admin" and admin_pass == "1234":  # **BURAYA GERÇEK KULLANICI BİLGİLERİ GELECEK**
-            st.session_state["admin_logged_in"] = True
-            st.sidebar.success("✅ Başarıyla giriş yapıldı!")
+        if username == "admin" and password == "password123":  # Şifreyi değiştirilebilir yapabilirsin
+            st.session_state.admin_authenticated = True
+            st.sidebar.success("Başarıyla giriş yapıldı!")
         else:
-            st.sidebar.error("❌ Geçersiz kullanıcı adı veya şifre!")
+            st.sidebar.error("Hatalı kullanıcı adı veya şifre!")
+
+admin_login()
 
 # 🟠 **Admin Paneli Açıldıysa Listeler Yönetilebilir**
 if st.session_state["admin_logged_in"]:
