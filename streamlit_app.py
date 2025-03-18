@@ -71,9 +71,9 @@ if el31_file:
     df_el31_cleaned = only_p_lines(df_el31_cleaned)
     df_el31_filtered = filter_max_reading(df_el31_cleaned)
 
-    # **ZIP dosyasına kaydetme**
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w") as zipf:
+    # **ZIP dosyasına doğrudan dosya sistemine kaydet**
+    el31_zip_path = "el31_duzenlenmis.zip"  # ZIP dosya yolu
+    with zipfile.ZipFile(el31_zip_path, "w") as zipf:
         for tesisat, group in df_el31_filtered.groupby("Tesisat"):
             unique_muhatap = group["Muhatap adı"].unique()
 
@@ -92,10 +92,12 @@ if el31_file:
                 csv_data_AB = group.to_csv(sep=";", index=False).encode("utf-8")
                 zipf.writestr(file_name_AB, csv_data_AB)
 
-    zip_buffer.seek(0)
+    st.success("✅ EL31 Verileri Düzenlendi ve Kaydedildi!")
+    
+    # **ZIP dosyasını indirme butonu**
+    with open(el31_zip_path, "rb") as f:
+        st.download_button("📥 Düzenlenmiş EL31 Dosyalarını ZIP Olarak İndir", f, "el31_duzenlenmis.zip", "application/zip")
 
-    st.success("✅ EL31 Verileri Düzenlendi!")
-    st.download_button("📥 Düzenlenmiş EL31 Dosyalarını ZIP Olarak İndir", zip_buffer, "el31_duzenlenmis.zip", "application/zip")
 
 
 
@@ -111,9 +113,9 @@ if zblir_file:
 
     df_zblir_cleaned = filter_latest_two_contacts(df_zblir)
 
-    # **ZIP DOSYASI OLUŞTURMA**
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w") as zipf:
+    # **ZIP dosyasına doğrudan dosya sistemine kaydet**
+    zblir_zip_path = "zblir_duzenlenmis.zip"  # ZIP dosya yolu
+    with zipfile.ZipFile(zblir_zip_path, "w") as zipf:
         for tesisat, group in df_zblir_cleaned.groupby("Tesisat"):
             unique_muhatap = group["Muhatap Adı"].unique()
 
@@ -133,10 +135,11 @@ if zblir_file:
                 csv_data_AB = group.to_csv(sep=";", index=False).encode("utf-8")
                 zipf.writestr(file_name_AB, csv_data_AB)
 
-    zip_buffer.seek(0)
+    st.success("✅ ZBLIR_002 Verileri Düzenlendi ve Kaydedildi!")
 
-    st.success("✅ ZBLIR_002 Verileri Düzenlendi!")
-    st.download_button("📥 Düzenlenmiş ZBLIR_002 Dosyalarını ZIP Olarak İndir", zip_buffer, "zblir_duzenlenmis.zip", "application/zip")
+    # **ZIP dosyasını indirme butonu**
+    with open(zblir_zip_path, "rb") as f:
+        st.download_button("📥 Düzenlenmiş ZBLIR_002 Dosyalarını ZIP Olarak İndir", f, "zblir_duzenlenmis.zip", "application/zip")
 
 
 
