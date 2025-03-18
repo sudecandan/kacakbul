@@ -381,34 +381,53 @@ if st.session_state["admin_authenticated"]:
 
 
 
-# 🔹 Kullanıcıdan düşüş oranı parametrelerini al
-st.subheader("📉 Q Analizi İçin Düşüş Eşiği (%)")
-q_threshold_percentage = st.number_input("Düşüş eşiği (%):", min_value=1, max_value=100, value=30)
+# 🔵 **Düşüş Parametreleri**
+st.markdown("### 📉 Düşüş Parametreleri")
 
-# 🚀 **Analiz Başlat Butonu**
-if st.button("🚀 Analizi Başlat"):
-    # P ve T Analizleri Sonucu Oluşturulmuş CSV'yi Oku
-    if os.path.exists("analiz_sonuclari.csv"):
-        df_analysis_results = pd.read_csv("analiz_sonuclari.csv", delimiter=";", encoding="utf-8")
-        suspicious_tesisats = df_analysis_results["Şüpheli Tesisat"].unique()
-    else:
-        st.error("⚠️ P ve T analizleri sonucu dosyası bulunamadı! Lütfen önce P ve T analizlerini gerçekleştirin.")
+col1, col2 = st.columns(2)
+
+with col1:
+    decrease_percentage_q = st.number_input("📉 Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
+
+# 🚀 **Analizi Başlat Butonu**
+if st.button("🚀 T ve P Analizini Başlat"):
+    # 📥 Önceki analizler çalıştırıldıktan sonra sonuçlar burada oluşturulacak
+    combined_results = {
+        "Tesisat": ["400385438", "4003869769"],  # Örnek tesisatlar (gerçekte analiz_sonuclari.csv'den alınır)
+        "Şüpheli Analiz Türleri": ["P, T2", "T1"]
+    }
+    df_combined = pd.DataFrame(combined_results)
+
+    # 📥 Kullanıcıya indirilebilir dosya olarak sun
+    csv_data = df_combined.to_csv(index=False, sep=";").encode("utf-8")
+    st.download_button("📥 Analiz Sonuçlarını İndir", csv_data, "analiz_sonuclari.csv", "text/csv")
+
+# 🔍 **Q Analizi Yap**
+if st.button("📉 Q Analizini Başlat"):
+    st.subheader("📊 Q Analizi Başlatıldı!")
+
+    # 📂 Analiz sonuçları dosyasını oku
+    try:
+        df_analysis = pd.read_csv("analiz_sonuclari.csv", delimiter=";", encoding="utf-8")
+        suspicious_tesisats = df_analysis["Tesisat"].tolist()
+    except FileNotFoundError:
+        st.error("⚠️ Önce P ve T analizini çalıştırmalısınız!")
         st.stop()
-    
-    # 🔹 Binlik ayırıcıları kaldır, virgülleri ondalık olarak koru
-    def clean_numeric_columns(df):
-        df = df.copy()
-        for col in df.columns[2:]:  # İlk iki sütun (Tesisat, Mali yıl) hariç diğer sütunları temizle
-            df[col] = df[col].astype(str).str.replace(".", "", regex=True).str.replace(",", ".", regex=True)
-            df[col] = pd.to_numeric(df[col], errors="coerce")  # Sayısal değere çevir
-        return df
 
-    df_zdm240 = clean_numeric_columns(df_zdm240)
-
-    # 🔹 Şüpheli tesisatlar üzerinde işlem yap
+    # 📂 ZDM240 verisini temizle ve sadece şüpheli tesisatları filtrele
+    df_zdm240["Tesisat"] = df_zdm240["Tesisat"].astype(str)
     df_filtered = df_zdm240[df_zdm240["Tesisat"].isin(suspicious_tesisats)]
 
-    # 🔹 Aynı tesisat ve mali yıl için değerleri topla
+    # 🔹 Binlik ayırıcıları kaldır (noktaları sil, virgülleri ondalık olarak koru)
+    def clean_numeric_columns(df):
+        for col in df.columns[2:]:  # İlk iki sütun hariç
+            df[col] = df[col].astype(str).str.replace(".", "", regex=True).str.replace(",", ".", regex=True)
+            df[col] = pd.to_numeric(df[col], errors="coerce")  
+        return df
+
+    df_filtered = clean_numeric_columns(df_filtered)
+
+    # 🔹 Aynı tesisat ve mali yıl için tüketim değerlerini topla
     df_grouped = df_filtered.groupby(["Tesisat", "Mali yıl"]).sum().reset_index()
 
     # 🔹 Çeyrek yıl hesaplamaları (Q1, Q2, Q3, Q4)
@@ -417,37 +436,36 @@ if st.button("🚀 Analizi Başlat"):
     df_grouped["Q3"] = df_grouped[["Tük_Eylül", "Tük_Ekim", "Tük_Kasım"]].sum(axis=1)
     df_grouped["Q4"] = df_grouped[["Tük_Aralık", "Tük_Ocak", "Tük_Şubat"]].sum(axis=1)
 
-    # 🔍 Şüpheli tesisatları belirleme
+    # 📌 Şüpheli Q Analizi:
     suspicious_q_results = []
     for tesisat in df_grouped["Tesisat"].unique():
         df_tesisat = df_grouped[df_grouped["Tesisat"] == tesisat].sort_values(by="Mali yıl")
+
         for q in ["Q1", "Q2", "Q3", "Q4"]:
             overall_avg = df_tesisat[q].mean()  # Tüm yılların ortalamasını hesapla
-            
-            # Eğer yıl bazında ortalama değerinin belirli bir yüzdesinden daha düşükse, şüpheli olarak işaretle
-            below_threshold = df_tesisat[q] < (overall_avg * (1 - q_threshold_percentage / 100))
-            
-            if below_threshold.any():
-                for idx, is_suspicious in enumerate(below_threshold):
-                    if is_suspicious:
-                        suspicious_q_results.append({
-                            "Tesisat": tesisat,
-                            "Mali Yıl": df_tesisat.iloc[idx]["Mali yıl"],
-                            "Çeyrek": q,
-                            "Değer": df_tesisat.iloc[idx][q],
-                            "Ortalama": overall_avg,
-                            "Düşüş (%)": ((overall_avg - df_tesisat.iloc[idx][q]) / overall_avg) * 100
-                        })
+
+            # En güncel yılın çeyrek tüketimi, ortalamanın belirlenen eşiğin altına düştüyse şüpheli olarak işaretle
+            latest_year = df_tesisat.iloc[-1]["Mali yıl"]
+            latest_value = df_tesisat.iloc[-1][q]
+
+            if latest_value < (overall_avg * (1 - decrease_percentage_q / 100)):
+                suspicious_q_results.append({
+                    "Tesisat": tesisat,
+                    "Mali Yıl": latest_year,
+                    "Çeyrek": q,
+                    "Değer": latest_value,
+                    "Ortalama": overall_avg,
+                    "Düşüş (%)": ((overall_avg - latest_value) / overall_avg) * 100
+                })
 
     # 🔹 Sonuçları ekrana yazdır
     if suspicious_q_results:
-        df_suspicious_q = pd.DataFrame(suspicious_q_results)
-        st.subheader("⚠️ Şüpheli Tesisatlar (Q Analizi)")
-        st.dataframe(df_suspicious_q)
+        df_q_suspicious = pd.DataFrame(suspicious_q_results)
+        st.subheader("⚠️ Q Analizi Sonucu: Şüpheli Tesisatlar")
+        st.dataframe(df_q_suspicious)
 
         # 📥 CSV olarak indirme butonu ekle
-        csv_suspicious_q = df_suspicious_q.to_csv(index=False, sep=";").encode("utf-8")
-        st.download_button("📥 Q Analizi Şüpheli Tesisatları İndir", csv_suspicious_q, "q_supheli_tesisatlar.csv", "text/csv")
+        csv_q_suspicious = df_q_suspicious.to_csv(index=False, sep=";").encode("utf-8")
+        st.download_button("📥 Q Analizi Şüpheli Sonuçlarını İndir", csv_q_suspicious, "q_analiz_sonuclari.csv", "text/csv")
     else:
-        st.success("✅ Q Analizinde şüpheli tesisat bulunamadı.")
-
+        st.success("✅ Q Analizi tamamlandı, şüpheli tesisat bulunamadı.")
