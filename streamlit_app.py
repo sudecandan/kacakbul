@@ -290,3 +290,22 @@ if st.button("🚀 Analizi Başlat"):
 
 #BURAYA KADAR DA OKEY
 
+
+
+# --- SESSION STATE (Admin Giriş için) ---
+if 'admin_authenticated' not in st.session_state:
+    st.session_state.admin_authenticated = False
+
+# --- ADMIN PANELI GIRIŞI ---
+def admin_login():
+    st.sidebar.subheader("🔐 Admin Girişi")
+    username = st.sidebar.text_input("Kullanıcı Adı")
+    password = st.sidebar.text_input("Şifre", type="password")
+    if st.sidebar.button("Giriş Yap"):
+        if username == "admin" and password == "password123":  # Şifreyi değiştirilebilir yapabilirsin
+            st.session_state.admin_authenticated = True
+            st.sidebar.success("Başarıyla giriş yapıldı!")
+        else:
+            st.sidebar.error("Hatalı kullanıcı adı veya şifre!")
+
+admin_login()
