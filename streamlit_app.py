@@ -407,6 +407,7 @@ if st.button("📉 Q Analizini Başlat"):
 
     df_analysis = pd.read_csv("analiz_sonuclari.csv", delimiter=";", encoding="utf-8")
 
+    # 🔹 'Şüpheli Tesisat' sütununun olup olmadığını kontrol et
     if "Şüpheli Tesisat" not in df_analysis.columns:
         st.error("⚠️ 'Şüpheli Tesisat' sütunu bulunamadı! Lütfen P ve T analizini tekrar çalıştırın.")
         st.stop()
@@ -420,35 +421,65 @@ if st.button("📉 Q Analizini Başlat"):
     if df_filtered.empty:
         st.warning("⚠️ Q Analizine uygun tesisat bulunamadı.")
         st.stop()
-        
 
-    # 🔹 Binlik ayırıcıları kaldır
-    def clean_numeric_columns(df):
-        for col in df.columns[2:]:
-            df[col] = df[col].astype(str).str.replace(".", "", regex=True).str.replace(",", ".", regex=True)
-            df[col] = pd.to_numeric(df[col], errors="coerce")  
-        return df
-
-    df_filtered = clean_numeric_columns(df_filtered)
+    # 🔍 Mevcut sütunları kontrol et
+    st.write("📌 **Mevcut Sütunlar:**", df_filtered.columns.tolist())
 
     # 🔹 Çeyrek yıl hesaplamaları
-    df_filtered["Q1"] = df_filtered[["Tük_Mart", "Tük_Nisan", "Tük_Mayıs"]].sum(axis=1)
-    df_filtered["Q2"] = df_filtered[["Tük_Haziran", "Tük_Temmuz", "Tük_Ağustos"]].sum(axis=1)
-    df_filtered["Q3"] = df_filtered[["Tük_Eylül", "Tük_Ekim", "Tük_Kasım"]].sum(axis=1)
-    df_filtered["Q4"] = df_filtered[["Tük_Aralık", "Tük_Ocak", "Tük_Şubat"]].sum(axis=1)
+    quarter_columns = {
+        "Q1": ["Tük_Mart", "Tük_Nisan", "Tük_Mayıs"],
+        "Q2": ["Tük_Haziran", "Tük_Temmuz", "Tük_Ağustos"],
+        "Q3": ["Tük_Eylül", "Tük_Ekim", "Tük_Kasım"],
+        "Q4": ["Tük_Aralık", "Tük_Ocak", "Tük_Şubat"]
+    }
+
+    # 🔹 Eksik sütunları kontrol et
+    for q, cols in quarter_columns.items():
+        missing_cols = [col for col in cols if col not in df_filtered.columns]
+        if missing_cols:
+            st.error(f"⚠️ Q Analizi için eksik sütunlar: {missing_cols}")
+            st.stop()
+
+    # 🔹 Çeyrek tüketimleri hesapla
+    for q, cols in quarter_columns.items():
+        df_filtered[q] = df_filtered[cols].sum(axis=1, skipna=True)
 
     # 📌 Şüpheli Q Analizi:
     suspicious_q_results = []
+
     for tesisat in df_filtered["Tesisat"].unique():
-        df_tesisat = df_filtered[df_filtered["Tesisat"] == tesisat].sort_values(by="Mali yıl")
+        df_tesisat = df_filtered[df_filtered["Tesisat"] == tesisat].sort_values(by="Tesisat")
 
         for q in ["Q1", "Q2", "Q3", "Q4"]:
-            overall_avg = df_tesisat[q].mean()
-            latest_year = df_tesisat.iloc[-1]["Mali yıl"]
+            overall_avg = df_tesisat[q].mean(skipna=True)
+
+            # 'Mali yıl' sütunu var mı kontrol et
+            if "Mali yıl" in df_tesisat.columns:
+                latest_year = df_tesisat.iloc[-1]["Mali yıl"]
+            else:
+                latest_year = "Bilinmiyor"
+
             latest_value = df_tesisat.iloc[-1][q]
 
             if latest_value < (overall_avg * (1 - decrease_percentage_q / 100)):
-                suspicious_q_results.append({"Tesisat": tesisat, "Mali Yıl": latest_year, "Çeyrek": q, "Düşüş (%)": ((overall_avg - latest_value) / overall_avg) * 100})
+                suspicious_q_results.append({
+                    "Tesisat": tesisat,
+                    "Mali Yıl": latest_year,
+                    "Çeyrek": q,
+                    "Düşüş (%)": round(((overall_avg - latest_value) / overall_avg) * 100, 2)
+                })
 
+    # 📥 Sonuçları indirilebilir hale getir
     df_q_suspicious = pd.DataFrame(suspicious_q_results)
-    st.download_button("📥 Q Analizi Sonuçlarını İndir", df_q_suspicious.to_csv(sep=";", index=False).encode("utf-8"), "q_analiz_sonuclari.csv", "text/csv")
+
+    if not df_q_suspicious.empty:
+        st.success(f"✅ Q Analizi tamamlandı! **{len(df_q_suspicious)} şüpheli tesisat bulundu.**")
+        st.dataframe(df_q_suspicious)
+
+        st.download_button("📥 Q Analizi Sonuçlarını İndir",
+                           df_q_suspicious.to_csv(sep=";", index=False).encode("utf-8"),
+                           "q_analiz_sonuclari.csv",
+                           "text/csv")
+    else:
+        st.warning("⚠️ Q Analizi sonucunda şüpheli tesisat bulunamadı!")
+
