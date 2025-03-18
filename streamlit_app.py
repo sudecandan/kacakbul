@@ -8,6 +8,7 @@ import numpy as np
 from io import BytesIO
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image
+pip install matplotlib openpyxl
 
 # STREAMLIT BAŞLIĞI
 st.title("⚡ KaçakBul")
