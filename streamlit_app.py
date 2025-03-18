@@ -382,8 +382,9 @@ if zdm240_file and st.button("📌 ZDM240 Verilerini Düzenle"):
         # Sayısal sütunlardan binlik ayırıcıları kaldır ve float formatına çevir
         for col in df.columns:
             if "Tük_" in col or col in ["Tüketim Toplam", "Gün Toplam"]:
-                df[col] = df[col].astype(str).str.replace(".", "").str.replace(",", ".")
-                df[col] = pd.to_numeric(df[col], errors="coerce")
+                df[col] = df[col].astype(str).str.replace(".", "", regex=True)  # Sadece noktaları siler
+                df[col] = pd.to_numeric(df[col], errors="coerce")  # Sayıya çevir
+
 
         # Aynı yıl ve tesisata ait verileri birleştirerek toplamak
         df = df.groupby(["Tesisat", "Mali yıl"], as_index=False).sum()
