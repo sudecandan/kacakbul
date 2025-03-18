@@ -412,7 +412,11 @@ if st.button("📊 Grafikleri Oluştur ve İndir"):
                         plt.close()
 
                         # **Grafiği Excel'e Ekle**
+                        img_stream.seek(0)  
+                        # **Hafızadaki görüntüyü başa al**
                         img = Image(img_stream)
+
+                        # **Excel'de uygun hücreye grafiği ekle**
                         img.anchor = f"J{10 * (list(unique_endeks_types).index(endeks) + 1)}"
                         ws.add_image(img)
 
