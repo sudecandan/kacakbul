@@ -8,7 +8,21 @@ import numpy as np
 from io import BytesIO
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image
-pip install matplotlib openpyxl
+
+import subprocess
+import sys
+
+# Eksik kütüphaneleri yüklemek için
+def install_missing_packages():
+    required_packages = ["matplotlib", "openpyxl"]
+    for package in required_packages:
+        try:
+            __import__(package)
+        except ImportError:
+            subprocess.call([sys.executable, "-m", "pip", "install", package])
+
+install_missing_packages()
+
 
 # STREAMLIT BAŞLIĞI
 st.title("⚡ KaçakBul")
