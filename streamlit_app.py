@@ -399,7 +399,7 @@ if zdm240_file and st.button("📌 ZDM240 Verilerini Düzenle"):
     # 🔄 Veriyi temizle
     df_zdm240_cleaned = clean_zdm240(df_zdm240)
 
-    st.success("✅ ZDM240 Verileri Temizlendi!")
+
 
     # 📈 **Mevsimsel Q1, Q2, Q3, Q4 hesaplama**
     def calculate_seasonal_quarters(df):
