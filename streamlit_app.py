@@ -192,112 +192,13 @@ with col3 :
 # **Seçili analizleri belirleme**
 selected_analysis = [key for key, value in st.session_state.selected_analysis.items() if value]
 
-# **Analizi Başlat Butonu**
-if st.button("🚀 Analizi Başlat"):
 
-    combined_results = {}
 
-    # **P Analizi Seçildiyse Çalıştır**
-    if "P Analizi" in selected_analysis:
-        def p_analizi(df, esik_orani, alt_esik_sayisi):
-            df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".", regex=True)
-            df["Okunan sayaç durumu"] = pd.to_numeric(df["Okunan sayaç durumu"], errors="coerce")
-            df = df.dropna(subset=["Okunan sayaç durumu"])
 
-            for tesisat, group in df.groupby("Tesisat"):
-                p_values = group[group["Endeks türü"] == "P"]["Okunan sayaç durumu"].dropna().tolist()
-                if not p_values:
-                    continue
 
-                p_values_nonzero = [val for val in p_values if val > 0]
-                if len(p_values_nonzero) > 0:
-                    p_avg = sum(p_values_nonzero) / len(p_values_nonzero)
-                    esik_deger = p_avg * (1 - esik_orani / 100)
 
-                    below_threshold_count = sum(1 for val in p_values_nonzero if val < esik_deger)
 
-                    if below_threshold_count > alt_esik_sayisi:
-                        if tesisat in combined_results:
-                            combined_results[tesisat].append("P")
-                        else:
-                            combined_results[tesisat] = ["P"]
 
-        p_analizi(df_el31, decrease_percentage_p, decrease_count_p)
-
-    # **T Analizleri Seçildiyse Çalıştır**
-    if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]):
-
-        def calc_avg(df, endeks_turu, threshold_ratio):
-            filtered_df = df[df["Endeks Türü"] == endeks_turu].copy()
-            if filtered_df.empty:
-                return None
-
-            filtered_df["Ortalama Tüketim"] = pd.to_numeric(
-                filtered_df["Ortalama Tüketim"].astype(str).str.replace(",", ".", regex=True), errors="coerce"
-            )
-            nonzero_values = filtered_df["Ortalama Tüketim"].dropna()
-            nonzero_values = nonzero_values[nonzero_values > 0].tolist()
-
-            if not nonzero_values:
-                return None
-
-            avg_value = sum(nonzero_values) / len(nonzero_values)
-            threshold_value = avg_value * (1 - threshold_ratio / 100)
-
-            return avg_value, threshold_value
-
-        def analyze_tesisat_data(df, threshold_ratio, below_threshold_limit):
-            for tesisat, group in df.groupby("Tesisat"):
-                suspicious_endeks_types = []
-
-                for endeks_turu in ["T1", "T2", "T3"]:
-                    if endeks_turu + " Analizi" not in selected_analysis:
-                        continue
-
-                    result = calc_avg(group, endeks_turu, threshold_ratio)
-                    if result is None:
-                        continue
-
-                    avg_value, threshold_value = result
-
-                    below_threshold_count = sum(
-                        1
-                        for val in pd.to_numeric(
-                            group[group["Endeks Türü"] == endeks_turu]["Ortalama Tüketim"]
-                            .astype(str)
-                            .str.replace(",", ".", regex=True), errors="coerce"
-                        ).dropna()
-                        if val > 0 and val < threshold_value
-                    )
-
-                    if below_threshold_count > below_threshold_limit:
-                        if tesisat in combined_results:
-                            combined_results[tesisat].append(endeks_turu)
-                        else:
-                            combined_results[tesisat] = [endeks_turu]
-
-        analyze_tesisat_data(df_zblir, decrease_percentage_t, decrease_count_t)
-
-    if combined_results:
-        df_combined = pd.DataFrame(list(combined_results.items()), columns=["Şüpheli Tesisat", "Şüpheli Analiz Türleri"])
-        df_combined["Şüpheli Analiz Türleri"] = df_combined["Şüpheli Analiz Türleri"].apply(lambda x: ", ".join(x))
-
-        # **İndeksi 1’den başlat**
-        df_combined.index += 1  
-
-        # **Sonuçları Göster**
-        st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_combined)} şüpheli tesisat bulundu.**")
-        st.dataframe(df_combined)
-
-        # **Tek bir CSV dosyası olarak indir**
-        st.download_button(
-            "📥 Analiz Sonuçlarını İndir",
-            df_combined.to_csv(sep=";", index=True).encode("utf-8"),  # index=True ile yeni indeksleri de ekliyoruz
-            "analiz_sonuclari.csv",
-            "text/csv"
-        )
-    else:
-        st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
 
 #BURAYA DÜZENLENMİŞ LİSTELER İÇİN OLUŞTURULAN GRAFİKLER İÇİN OLAN KODLAR GELECEK
 
@@ -495,11 +396,7 @@ if st.button("🚀 Analizi Başlat"):
         st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
 
 
-
-
-
-
-# 🔍 **Q Analizi Yap**
+# 🔍 **Q Analizi Butonu**
 if st.button("📉 Q Analizini Başlat"):
     st.subheader("📊 Q Analizi Başlatıldı!")
 
@@ -545,3 +442,6 @@ if st.button("📉 Q Analizini Başlat"):
 
     df_q_suspicious = pd.DataFrame(suspicious_q_results)
     st.download_button("📥 Q Analizi Sonuçlarını İndir", df_q_suspicious.to_csv(sep=";", index=False).encode("utf-8"), "q_analiz_sonuclari.csv", "text/csv")
+
+
+
