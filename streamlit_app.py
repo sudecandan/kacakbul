@@ -291,6 +291,13 @@ if st.button("🚀 Analizi Başlat"):
 #BURAYA KADAR DA OKEY
 
 
+
+
+
+import streamlit as st
+import pandas as pd
+import os
+
 # 📌 **Saklanacak dosya yolları**
 FILE_PATHS = {
     "Sektör Listesi": "sector_list.csv",
