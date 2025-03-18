@@ -285,27 +285,86 @@ if st.button("🚀 Analizi Başlat"):
     else:
         st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
 
-
+#BURAYA DÜZENLENMİŞ LİSTELER İÇİN OLUŞTURULAN GRAFİKLER İÇİN OLAN KODLAR GELECEK
 
 
 #BURAYA KADAR DA OKEY
 
 
 
-# --- SESSION STATE (Admin Giriş için) ---
-if 'admin_authenticated' not in st.session_state:
-    st.session_state.admin_authenticated = False
+import os
+import streamlit as st
+import pandas as pd
 
-# --- ADMIN PANELI GIRIŞI ---
-def admin_login():
-    st.sidebar.subheader("🔐 Admin Girişi")
-    username = st.sidebar.text_input("Kullanıcı Adı")
-    password = st.sidebar.text_input("Şifre", type="password")
-    if st.sidebar.button("Giriş Yap"):
-        if username == "admin" and password == "password123":  # Şifreyi değiştirilebilir yapabilirsin
-            st.session_state.admin_authenticated = True
-            st.sidebar.success("Başarıyla giriş yapıldı!")
-        else:
-            st.sidebar.error("Hatalı kullanıcı adı veya şifre!")
+# 📌 **Dosyaların saklanacağı yollar**
+FILE_PATHS = {
+    "Sektör Listesi": "sector_list.csv",
+    "Sektör Puan Listesi": "sector_score_list.csv",
+    "Çarpan Listesi": "multiplier_list.csv",
+    "Çarpan Puan Listesi": "multiplier_score_list.csv",
+    "Mahalle Listesi": "neighborhood_list.csv",
+    "Mahalle Puan Listesi": "neighborhood_score_list.csv",
+    "Şube Kablo Değişme Listesi": "cable_change_list.csv",
+    "Şube Kablo Değişme Puan Listesi": "cable_change_score_list.csv",
+    "Çarpan Değişme Listesi": "multiplier_change_list.csv",
+    "Çarpan Değişme Puan Listesi": "multiplier_change_score_list.csv",
+    "Son 4 Yıl Kaçak Tesisat Listesi": "theft_last_4_years.csv",
+}
 
-admin_login()
+# 📌 **Varsayılan Listeleri Yükle**
+def load_default_files():
+    for list_name, file_path in FILE_PATHS.items():
+        if not os.path.exists(file_path):
+            pd.DataFrame({list_name: ["Varsayılan Veri"]}).to_csv(file_path, index=False)
+
+# 📌 **Dosyaları Oku**
+def load_data():
+    return {list_name: pd.read_csv(file_path) for list_name, file_path in FILE_PATHS.items()}
+
+# 📌 **Dosyaları Güncelle ve Kaydet**
+def save_data(file, file_path):
+    if file is not None:
+        df = pd.read_csv(file)
+        df.to_csv(file_path, index=False)
+        st.success(f"✅ {file_path} başarıyla güncellendi!")
+
+# 📌 **Dosyaları Varsayılan Olarak Yükle**
+load_default_files()
+
+# 📌 **Admin Girişi Durumunu Kontrol Et**
+if "admin_logged_in" not in st.session_state:
+    st.session_state.admin_logged_in = False
+
+# 📌 **Admin Girişi Butonu**
+if st.button("🔑 Admin Girişi"):
+    st.session_state.show_admin = not st.session_state.show_admin
+
+# 📌 **Admin Panelini Aç/Kapat**
+if st.session_state.show_admin:
+    with st.sidebar:
+        st.subheader("🔒 Admin Girişi")
+        username = st.text_input("Kullanıcı Adı")
+        password = st.text_input("Şifre", type="password")
+        if st.button("Giriş Yap"):
+            if username == "admin" and password == "1234":  # Burada şifre hash'lenebilir.
+                st.session_state.admin_logged_in = True
+                st.success("✅ Başarıyla giriş yaptınız!")
+            else:
+                st.error("🚫 Hatalı kullanıcı adı veya şifre!")
+
+# 📌 **Admin giriş yaptıysa liste güncelleme ekranı aç**
+if st.session_state.admin_logged_in:
+    st.title("🔧 **Admin Paneli**")
+
+    # **Mevcut Dosyaları Yükle**
+    loaded_data = load_data()
+
+    # **Mevcut Verileri Göster ve Güncelleme Alanı**
+    for list_name, df in loaded_data.items():
+        st.subheader(f"📂 Mevcut {list_name}")
+        st.dataframe(df)
+
+        uploaded_file = st.file_uploader(f"📂 Yeni {list_name} Yükleyin (.csv)", type=["csv"])
+        if uploaded_file:
+            save_data(uploaded_file, FILE_PATHS[list_name])
+
