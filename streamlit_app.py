@@ -185,6 +185,7 @@ with col2:
     decrease_count_t = st.number_input("🔄 T Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=5)
 
 with col3 :
+    st.markdown("#### 📉 **Q Analizi İçin**")
     decrease_percentage_q = st.number_input("📉 Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
 
 
