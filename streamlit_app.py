@@ -374,70 +374,82 @@ if st.session_state["admin_authenticated"]:
 
 
 
-# **ZDM240 VERİLERİNİ DÜZENLE BUTONU**
+# 📉 Kullanıcıdan Q düşüş yüzdesi al
+q_drop_threshold = st.number_input("📉 Q yüzde kaç düşüş?", min_value=1, max_value=100, step=1, value=30)
+
 if zdm240_file and st.button("📌 ZDM240 Verilerini Düzenle"):
-    
     def clean_zdm240(df):
-        """ZDM240 verilerini temizleme fonksiyonu"""
-        # Binlik ayırıcı noktaları kaldır
-        for col in df.select_dtypes(include=["object"]):
-            df[col] = df[col].astype(str).str.replace(".", "", regex=False)
-        
-        # Sayısal verilere dönüşüm
-        df["Tüketim"] = pd.to_numeric(df["Tüketim"], errors="coerce")
-        df["Mali Yıl"] = pd.to_numeric(df["Mali Yıl"], errors="coerce")
-        
-        # Aynı tesisat ve aynı yıl için tüketimleri topla
-        df = df.groupby(["Tesisat", "Mali Yıl"], as_index=False).agg({"Tüketim": "sum"})
-        
+        # Sayısal sütunlardan binlik ayırıcıları kaldır ve float formatına çevir
+        for col in df.columns:
+            if "Tük_" in col or col in ["Tüketim Toplam", "Gün Toplam"]:
+                df[col] = df[col].astype(str).str.replace(".", "").str.replace(",", ".")
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+
+        # Aynı yıl ve tesisata ait verileri birleştirerek toplamak
+        df = df.groupby(["Tesisat", "Mali yıl"], as_index=False).sum()
+
         return df
 
-    df_zdm240 = pd.read_csv(zdm240_file, delimiter=";", encoding="utf-8")
+    # 📂 Dosyanın formatına göre oku
+    if zdm240_file.name.endswith(".csv"):
+        df_zdm240 = pd.read_csv(zdm240_file, delimiter=";", encoding="utf-8")
+    else:
+        df_zdm240 = pd.read_excel(zdm240_file)
+
+    # 🔄 Veriyi temizle
     df_zdm240_cleaned = clean_zdm240(df_zdm240)
-    
-    # Düzenlenmiş dosyayı indirme butonu
-    csv_buffer = BytesIO()
-    df_zdm240_cleaned.to_csv(csv_buffer, sep=";", index=False, encoding="utf-8")
-    csv_buffer.seek(0)
-    
-    st.success("✅ ZDM240 Verileri Düzenlendi!")
-    st.download_button("📥 Düzenlenmiş ZDM240 Dosyasını İndir", csv_buffer, "zdm240_duzenlenmis.csv", "text/csv")
 
-# 🔵 **Düşüş Parametreleri (Çeyrek Düşüş Analizi İçin)**
-st.markdown("### 📉 Çeyrek Düşüş Parametreleri")
-q_decrease_percentage = st.number_input("📉 Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=20)
+    st.success("✅ ZDM240 Verileri Temizlendi!")
 
-# **ZDM240 ANALİZ BUTONU**
-if zdm240_file and st.button("🚀 ZDM240 Analizini Başlat"):
-    def calculate_quarters(df):
-        """Her yıl için çeyrek dönemleri hesaplar."""
-        df["Tarih"] = pd.to_datetime(df["Mali Yıl"].astype(str) + "-01-01")
-        df["Çeyrek"] = df["Tarih"].dt.quarter
-        return df.groupby(["Tesisat", "Mali Yıl", "Çeyrek"], as_index=False).agg({"Tüketim": "sum"})
-    
-    df_zdm240_quarters = calculate_quarters(df_zdm240_cleaned)
-    
-    def detect_suspicious(df, threshold):
-        """Çeyrek bazlı düşüşleri analiz eder."""
-        suspicious_tesisats = []
+    # 📈 **Mevsimsel Q1, Q2, Q3, Q4 hesaplama**
+    def calculate_seasonal_quarters(df):
+        df["Q1"] = df["Tük_Mart"] + df["Tük_Nisan"] + df["Tük_Mayıs"]
+        df["Q2"] = df["Tük_Haziran"] + df["Tük_Temmuz"] + df["Tük_Ağustos"]
+        df["Q3"] = df["Tük_Eylül"] + df["Tük_Ekim"] + df["Tük_Kasım"]
+        df["Q4"] = df["Tük_Aralık"] + df["Tük_Ocak"] + df["Tük_Şubat"]
+        return df
+
+    df_zdm240_quarters = calculate_seasonal_quarters(df_zdm240_cleaned)
+
+    # 📊 **Şüpheli tesisatları belirleme**
+    def detect_suspicious_tesisat(df, drop_threshold):
+        suspicious_tesisat = {}
+        years = sorted(df["Mali yıl"].unique())
+
         for tesisat, group in df.groupby("Tesisat"):
-            for q in range(1, 5):
-                q_values = group[group["Çeyrek"] == q]["Tüketim"].values
-                if len(q_values) > 1:
-                    avg_q = q_values[:-1].mean()
-                    last_q = q_values[-1]
-                    if last_q < avg_q * (1 - threshold / 100):
-                        suspicious_tesisats.append((tesisat, f"Q{q}"))
-        return pd.DataFrame(suspicious_tesisats, columns=["Şüpheli Tesisat", "Düşüş Tespit Edilen Çeyrek"])
-    
-    df_suspicious = detect_suspicious(df_zdm240_quarters, q_decrease_percentage)
-    
-    # **Sonuçları Göster**
-    st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_suspicious)} şüpheli tesisat bulundu.**")
-    st.dataframe(df_suspicious)
-    
-    # **Sonuçları indirilebilir hale getir**
-    csv_buffer = BytesIO()
-    df_suspicious.to_csv(csv_buffer, sep=";", index=False, encoding="utf-8")
-    csv_buffer.seek(0)
-    st.download_button("📥 Analiz Sonuçlarını İndir", csv_buffer, "zdm240_analiz_sonuclari.csv", "text/csv")
+            for q in ["Q1", "Q2", "Q3", "Q4"]:
+                q_values = group.set_index("Mali yıl")[q].dropna()
+
+                if len(q_values) < 2:
+                    continue  # En az 2 yıl olmalı
+
+                avg_q = q_values.mean()
+                threshold_value = avg_q * (1 - drop_threshold / 100)
+
+                below_threshold_years = q_values[q_values < threshold_value].index.tolist()
+
+                if below_threshold_years:
+                    if tesisat in suspicious_tesisat:
+                        suspicious_tesisat[tesisat].append(f"{q}: {below_threshold_years}")
+                    else:
+                        suspicious_tesisat[tesisat] = [f"{q}: {below_threshold_years}"]
+
+        return suspicious_tesisat
+
+    suspicious_results = detect_suspicious_tesisat(df_zdm240_quarters, q_drop_threshold)
+
+    if suspicious_results:
+        df_suspicious = pd.DataFrame(list(suspicious_results.items()), columns=["Tesisat", "Şüpheli Çeyrek Dönemler"])
+        df_suspicious.index += 1
+        st.success(f"✅ Şüpheli tesisatlar tespit edildi! Toplam: {len(df_suspicious)} tesisat.")
+        st.dataframe(df_suspicious)
+
+        # 📥 **Sonuçları CSV olarak indir**
+        st.download_button(
+            "📥 Şüpheli Tesisatları İndir",
+            df_suspicious.to_csv(sep=";", index=True).encode("utf-8"),
+            "supheli_tesisatlar.csv",
+            "text/csv"
+        )
+    else:
+        st.warning("⚠️ Belirtilen eşik değerine göre şüpheli tesisat bulunamadı!")
