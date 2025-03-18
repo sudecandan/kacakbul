@@ -291,12 +291,7 @@ if st.button("🚀 Analizi Başlat"):
 #BURAYA KADAR DA OKEY
 
 
-
-import os
-import streamlit as st
-import pandas as pd
-
-# 📌 **Dosyaların saklanacağı yollar**
+# 📌 **Saklanacak dosya yolları**
 FILE_PATHS = {
     "Sektör Listesi": "sector_list.csv",
     "Sektör Puan Listesi": "sector_score_list.csv",
@@ -311,60 +306,54 @@ FILE_PATHS = {
     "Son 4 Yıl Kaçak Tesisat Listesi": "theft_last_4_years.csv",
 }
 
-# 📌 **Varsayılan Listeleri Yükle**
-def load_default_files():
-    for list_name, file_path in FILE_PATHS.items():
-        if not os.path.exists(file_path):
-            pd.DataFrame({list_name: ["Varsayılan Veri"]}).to_csv(file_path, index=False)
+# 📌 **Varsayılan Listeleri Oluştur**
+for file in FILE_PATHS.values():
+    if not os.path.exists(file):
+        pd.DataFrame(columns=["Değer"]).to_csv(file, index=False)
 
-# 📌 **Dosyaları Oku**
-def load_data():
-    return {list_name: pd.read_csv(file_path) for list_name, file_path in FILE_PATHS.items()}
+# 🟡 **Admin Paneli Aç/Kapat Durumu**
+if "show_admin_login" not in st.session_state:
+    st.session_state["show_admin_login"] = False
 
-# 📌 **Dosyaları Güncelle ve Kaydet**
-def save_data(file, file_path):
-    if file is not None:
-        df = pd.read_csv(file)
-        df.to_csv(file_path, index=False)
-        st.success(f"✅ {file_path} başarıyla güncellendi!")
-
-# 📌 **Dosyaları Varsayılan Olarak Yükle**
-load_default_files()
-
-# 📌 **Admin Girişi Durumunu Kontrol Et**
 if "admin_logged_in" not in st.session_state:
-    st.session_state.admin_logged_in = False
+    st.session_state["admin_logged_in"] = False
 
-# 📌 **Admin Girişi Butonu**
-if st.button("🔑 Admin Girişi"):
-    st.session_state.show_admin = not st.session_state.show_admin
+# 🟢 **Admin Girişi**
+st.sidebar.subheader("🔑 Admin Kontrol")
 
-# 📌 **Admin Panelini Aç/Kapat**
-if st.session_state.show_admin:
-    with st.sidebar:
-        st.subheader("🔒 Admin Girişi")
-        username = st.text_input("Kullanıcı Adı")
-        password = st.text_input("Şifre", type="password")
-        if st.button("Giriş Yap"):
-            if username == "admin" and password == "1234":  # Burada şifre hash'lenebilir.
-                st.session_state.admin_logged_in = True
-                st.success("✅ Başarıyla giriş yaptınız!")
-            else:
-                st.error("🚫 Hatalı kullanıcı adı veya şifre!")
+if not st.session_state["show_admin_login"]:
+    if st.sidebar.button("🔑 Admin Girişi"):
+        st.session_state["show_admin_login"] = True
 
-# 📌 **Admin giriş yaptıysa liste güncelleme ekranı aç**
-if st.session_state.admin_logged_in:
-    st.title("🔧 **Admin Paneli**")
+# 🔵 **Admin Giriş Ekranı**
+if st.session_state["show_admin_login"] and not st.session_state["admin_logged_in"]:
+    st.sidebar.subheader("🔒 Admin Girişi")
+    admin_user = st.sidebar.text_input("Kullanıcı Adı")
+    admin_pass = st.sidebar.text_input("Şifre", type="password")
+    if st.sidebar.button("Giriş Yap"):
+        if admin_user == "admin" and admin_pass == "1234":  # **BURAYA GERÇEK KULLANICI BİLGİLERİ GELECEK**
+            st.session_state["admin_logged_in"] = True
+            st.sidebar.success("✅ Başarıyla giriş yapıldı!")
+        else:
+            st.sidebar.error("❌ Geçersiz kullanıcı adı veya şifre!")
 
-    # **Mevcut Dosyaları Yükle**
-    loaded_data = load_data()
+# 🟠 **Admin Paneli Açıldıysa Listeler Yönetilebilir**
+if st.session_state["admin_logged_in"]:
+    st.sidebar.subheader("📂 Listeleri Yükle")
 
-    # **Mevcut Verileri Göster ve Güncelleme Alanı**
-    for list_name, df in loaded_data.items():
-        st.subheader(f"📂 Mevcut {list_name}")
-        st.dataframe(df)
-
-        uploaded_file = st.file_uploader(f"📂 Yeni {list_name} Yükleyin (.csv)", type=["csv"])
+    for list_name, file_path in FILE_PATHS.items():
+        st.sidebar.write(f"📌 **{list_name}**")
+        uploaded_file = st.sidebar.file_uploader(f"{list_name} Dosya Yükleyin", type=["csv"])
         if uploaded_file:
-            save_data(uploaded_file, FILE_PATHS[list_name])
+            df = pd.read_csv(uploaded_file)
+            df.to_csv(file_path, index=False)
+            st.sidebar.success(f"✅ {list_name} güncellendi!")
+
+    if st.sidebar.button("🚪 Çıkış Yap"):
+        st.session_state["admin_logged_in"] = False
+        st.sidebar.warning("Admin çıkış yaptı!")
+
+# 🔴 **Admin Giriş Yapmadıysa Listeleri Değiştiremez**
+elif st.session_state["show_admin_login"]:
+    st.sidebar.warning("⚠️ Admin giriş yapmadan listeler değiştirilemez!")
 
