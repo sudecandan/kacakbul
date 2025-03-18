@@ -15,6 +15,9 @@ with col1:
 with col2:
     zblir_file = st.file_uploader("📂 ZBLIR_002 Dosyasını Yükleyin (.csv)", type=["csv"])
 
+with col3:
+    zdm240_file = st.file_uploader("📂 ZDM240 Dosyasını Yükleyin (.csv)", type=["csv"])
+
 # Kullanıcı dosyaları yüklediyse önizleme göster
 if el31_file and zblir_file:
     st.subheader("📊 Yüklenen Dosya Önizlemesi")
@@ -288,6 +291,9 @@ if st.button("🚀 Analizi Başlat"):
 #BURAYA DÜZENLENMİŞ LİSTELER İÇİN OLUŞTURULAN GRAFİKLER İÇİN OLAN KODLAR GELECEK
 
 
+
+
+
 #BURAYA KADAR DA OKEY
 
 
@@ -362,3 +368,76 @@ if st.session_state["admin_authenticated"]:
         st.rerun()  # Admin çıkış yaptığında sayfa yenilenecek ve yükleme yerleri kapanacak
 
 
+
+#BURAYA KADAR OKEYDİR.
+
+
+
+
+# **ZDM240 VERİLERİNİ DÜZENLE BUTONU**
+if zdm240_file and st.button("📌 ZDM240 Verilerini Düzenle"):
+    
+    def clean_zdm240(df):
+        """ZDM240 verilerini temizleme fonksiyonu"""
+        # Binlik ayırıcı noktaları kaldır
+        for col in df.select_dtypes(include=["object"]):
+            df[col] = df[col].astype(str).str.replace(".", "", regex=False)
+        
+        # Sayısal verilere dönüşüm
+        df["Tüketim"] = pd.to_numeric(df["Tüketim"], errors="coerce")
+        df["Mali Yıl"] = pd.to_numeric(df["Mali Yıl"], errors="coerce")
+        
+        # Aynı tesisat ve aynı yıl için tüketimleri topla
+        df = df.groupby(["Tesisat", "Mali Yıl"], as_index=False).agg({"Tüketim": "sum"})
+        
+        return df
+
+    df_zdm240 = pd.read_csv(zdm240_file, delimiter=";", encoding="utf-8")
+    df_zdm240_cleaned = clean_zdm240(df_zdm240)
+    
+    # Düzenlenmiş dosyayı indirme butonu
+    csv_buffer = BytesIO()
+    df_zdm240_cleaned.to_csv(csv_buffer, sep=";", index=False, encoding="utf-8")
+    csv_buffer.seek(0)
+    
+    st.success("✅ ZDM240 Verileri Düzenlendi!")
+    st.download_button("📥 Düzenlenmiş ZDM240 Dosyasını İndir", csv_buffer, "zdm240_duzenlenmis.csv", "text/csv")
+
+# 🔵 **Düşüş Parametreleri (Çeyrek Düşüş Analizi İçin)**
+st.markdown("### 📉 Çeyrek Düşüş Parametreleri")
+q_decrease_percentage = st.number_input("📉 Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=20)
+
+# **ZDM240 ANALİZ BUTONU**
+if zdm240_file and st.button("🚀 ZDM240 Analizini Başlat"):
+    def calculate_quarters(df):
+        """Her yıl için çeyrek dönemleri hesaplar."""
+        df["Tarih"] = pd.to_datetime(df["Mali Yıl"].astype(str) + "-01-01")
+        df["Çeyrek"] = df["Tarih"].dt.quarter
+        return df.groupby(["Tesisat", "Mali Yıl", "Çeyrek"], as_index=False).agg({"Tüketim": "sum"})
+    
+    df_zdm240_quarters = calculate_quarters(df_zdm240_cleaned)
+    
+    def detect_suspicious(df, threshold):
+        """Çeyrek bazlı düşüşleri analiz eder."""
+        suspicious_tesisats = []
+        for tesisat, group in df.groupby("Tesisat"):
+            for q in range(1, 5):
+                q_values = group[group["Çeyrek"] == q]["Tüketim"].values
+                if len(q_values) > 1:
+                    avg_q = q_values[:-1].mean()
+                    last_q = q_values[-1]
+                    if last_q < avg_q * (1 - threshold / 100):
+                        suspicious_tesisats.append((tesisat, f"Q{q}"))
+        return pd.DataFrame(suspicious_tesisats, columns=["Şüpheli Tesisat", "Düşüş Tespit Edilen Çeyrek"])
+    
+    df_suspicious = detect_suspicious(df_zdm240_quarters, q_decrease_percentage)
+    
+    # **Sonuçları Göster**
+    st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_suspicious)} şüpheli tesisat bulundu.**")
+    st.dataframe(df_suspicious)
+    
+    # **Sonuçları indirilebilir hale getir**
+    csv_buffer = BytesIO()
+    df_suspicious.to_csv(csv_buffer, sep=";", index=False, encoding="utf-8")
+    csv_buffer.seek(0)
+    st.download_button("📥 Analiz Sonuçlarını İndir", csv_buffer, "zdm240_analiz_sonuclari.csv", "text/csv")
