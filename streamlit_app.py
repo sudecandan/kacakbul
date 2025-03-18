@@ -396,21 +396,31 @@ if st.button("🚀 Analizi Başlat"):
         st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
 
 
-# 🔍 **Q Analizi Butonu**
+# 🔍 **Q Analizi Başlat**
 if st.button("📉 Q Analizini Başlat"):
     st.subheader("📊 Q Analizi Başlatıldı!")
 
     # 📂 Analiz sonuçları dosyasını oku
-    try:
-        df_analysis = pd.read_csv("analiz_sonuclari.csv", delimiter=";", encoding="utf-8")
-        suspicious_tesisats = df_analysis["Tesisat"].tolist()
-    except FileNotFoundError:
+    if not os.path.exists("analiz_sonuclari.csv"):
         st.error("⚠️ Önce P ve T analizini çalıştırmalısınız!")
         st.stop()
+
+    df_analysis = pd.read_csv("analiz_sonuclari.csv", delimiter=";", encoding="utf-8")
+
+    if "Şüpheli Tesisat" not in df_analysis.columns:
+        st.error("⚠️ 'Şüpheli Tesisat' sütunu bulunamadı! Lütfen P ve T analizini tekrar çalıştırın.")
+        st.stop()
+
+    suspicious_tesisats = df_analysis["Şüpheli Tesisat"].astype(str).tolist()
 
     # 📂 ZDM240 verisini temizle ve sadece şüpheli tesisatları filtrele
     df_zdm240["Tesisat"] = df_zdm240["Tesisat"].astype(str)
     df_filtered = df_zdm240[df_zdm240["Tesisat"].isin(suspicious_tesisats)]
+
+    if df_filtered.empty:
+        st.warning("⚠️ Q Analizine uygun tesisat bulunamadı.")
+        st.stop()
+        
 
     # 🔹 Binlik ayırıcıları kaldır
     def clean_numeric_columns(df):
@@ -442,6 +452,3 @@ if st.button("📉 Q Analizini Başlat"):
 
     df_q_suspicious = pd.DataFrame(suspicious_q_results)
     st.download_button("📥 Q Analizi Sonuçlarını İndir", df_q_suspicious.to_csv(sep=";", index=False).encode("utf-8"), "q_analiz_sonuclari.csv", "text/csv")
-
-
-
