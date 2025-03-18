@@ -1,7 +1,13 @@
 import streamlit as st
 import pandas as pd
 import zipfile
+import os
+import shutil
+import matplotlib.pyplot as plt
+import numpy as np
 from io import BytesIO
+from openpyxl import load_workbook
+from openpyxl.drawing.image import Image
 
 # STREAMLIT BAŞLIĞI
 st.title("⚡ KaçakBul")
@@ -292,6 +298,10 @@ if st.button("🚀 Analizi Başlat"):
 
 
 
+# **ZIP Dosyalarını Grafiklemek için Buton**
+if st.button("📊 Grafikleri Oluştur ve İndir"):
+
+    st.subheader("📊 Grafikleme İşlemi Başlatıldı")
 
 
 
