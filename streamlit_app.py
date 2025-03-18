@@ -12,8 +12,7 @@ from openpyxl.drawing.image import Image
 
 # STREAMLIT BAŞLIĞI
 st.title("⚡ KaçakBul")
-st.write("EL31 ZIP Dosya Yolu:", os.path.abspath(el31_zip_path))
-st.write("ZBLIR ZIP Dosya Yolu:", os.path.abspath(zblir_zip_path))
+
 
 
 # Kullanıcıdan dosya yükleme için iki sütun
