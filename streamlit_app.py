@@ -381,84 +381,89 @@ if st.session_state["admin_authenticated"]:
 
 
 
-if zdm240_file:
-    try:
-        # 🔹 Dosyanın boyutunu kontrol et
-        if zdm240_file.size == 0:
-            st.error("⚠️ Hata: Yüklenen dosya boş! Lütfen geçerli bir CSV dosyası yükleyin.")
-            st.stop()
+# **Analiz Sonuçlarını Otomatik Okuma**
+analiz_sonuclari_path = "analiz_sonuclari.csv"
+if os.path.exists(analiz_sonuclari_path):
+    df_analiz_sonuclari = pd.read_csv(analiz_sonuclari_path, delimiter=";", encoding="utf-8")
+    tesisatlar = df_analiz_sonuclari["Şüpheli Tesisat"].unique()  # Şüpheli tesisatlar listesi
+else:
+    tesisatlar = None  # Eğer analiz sonuçları yoksa Q analizi yapma
 
-        # 🔹 Otomatik delimiter algılama ve okuma
-        df_zdm240 = pd.read_csv(zdm240_file, sep=None, engine="python", encoding="utf-8", low_memory=False)
 
-        # 📊 Dosya içeriğini önizleme
-        st.write("📋 **Dosya İçeriği (İlk 5 Satır)**")
-        st.dataframe(df_zdm240.head())
+    # **Q Analizi Yapılacak mı?**
+    if tesisatlar is not None:
+        st.subheader("📉 **Q Analizi - Şüpheli Tesisatlar Üzerinde**")
 
-        # 🔹 Sayısal sütunları temizle: Binlik noktaları kaldır, ondalık virgülleri koru
-        def clean_numeric_columns(df):
-            df = df.copy()
-            for col in df.columns[2:]:  # İlk iki sütun hariç (Tesisat, Mali yıl)
-                df[col] = df[col].astype(str).str.replace(".", "", regex=True).str.replace(",", ".", regex=True)
-                df[col] = pd.to_numeric(df[col], errors="coerce")  # Sayısal hale getir
-            return df
+        # 🔹 ZDM240 içinden sadece analiz_sonuclari.csv'de bulunan tesisatları filtrele
+        df_zdm240_filtered = df_zdm240[df_zdm240["Tesisat"].isin(tesisatlar)]
 
-        df_zdm240 = clean_numeric_columns(df_zdm240)
-
-        # 🔹 Aynı tesisat ve mali yıl için verileri topla
-        df_zdm240_grouped = df_zdm240.groupby(["Tesisat", "Mali yıl"]).sum().reset_index()
-
-        # 🔹 Çeyrekleri (Q1, Q2, Q3, Q4) hesapla
-        df_zdm240_grouped["Q1"] = df_zdm240_grouped[["Tük_Mart", "Tük_Nisan", "Tük_Mayıs"]].sum(axis=1)
-        df_zdm240_grouped["Q2"] = df_zdm240_grouped[["Tük_Haziran", "Tük_Temmuz", "Tük_Ağustos"]].sum(axis=1)
-        df_zdm240_grouped["Q3"] = df_zdm240_grouped[["Tük_Eylül", "Tük_Ekim", "Tük_Kasım"]].sum(axis=1)
-        df_zdm240_grouped["Q4"] = df_zdm240_grouped[["Tük_Aralık", "Tük_Ocak", "Tük_Şubat"]].sum(axis=1)
-
-        # 📊 Düzenlenmiş verileri göster
-        st.subheader("📊 **Düzenlenmiş ZDM240 Verisi**")
-        st.dataframe(df_zdm240_grouped)
-
-        # 📥 Kullanıcıya CSV olarak indirme seçeneği sun
-        csv = df_zdm240_grouped.to_csv(index=False, sep=";").encode("utf-8")
-        st.download_button("📥 Düzenlenmiş ZDM240 Verisini İndir", csv, "zdm240_duzenlenmis.csv", "text/csv")
-
-        # 🔹 Kullanıcıdan düşüş eşiği parametresi al
-        st.subheader("📉 **Şüpheli Tesisat Analizi**")
-        threshold_percentage = st.number_input("Düşüş eşiği (%):", min_value=1, max_value=100, value=30)
-
-        # 🔍 Şüpheli tesisatları belirleme
-        suspicious_tesisats = []
-        for tesisat in df_zdm240_grouped["Tesisat"].unique():
-            df_tesisat = df_zdm240_grouped[df_zdm240_grouped["Tesisat"] == tesisat].sort_values(by="Mali yıl")
-            for q in ["Q1", "Q2", "Q3", "Q4"]:
-                overall_avg = df_tesisat[q].mean()  # Tüm yılların ortalamasını hesapla
-                
-                # Eğer değer, ortalamanın belirli bir yüzdesinden daha düşükse şüpheli olarak işaretle
-                below_threshold = df_tesisat[q] < (overall_avg * (1 - threshold_percentage / 100))
-                
-                if below_threshold.any():
-                    for idx, is_suspicious in enumerate(below_threshold):
-                        if is_suspicious:
-                            suspicious_tesisats.append({
-                                "Tesisat": tesisat,
-                                "Mali Yıl": df_tesisat.iloc[idx]["Mali yıl"],
-                                "Çeyrek": q,
-                                "Değer": df_tesisat.iloc[idx][q],
-                                "Ortalama": overall_avg,
-                                "Düşüş (%)": ((overall_avg - df_tesisat.iloc[idx][q]) / overall_avg) * 100
-                            })
-
-        # 📊 Sonuçları ekrana yazdır
-        if suspicious_tesisats:
-            df_suspicious = pd.DataFrame(suspicious_tesisats)
-            st.subheader("⚠️ **Şüpheli Tesisatlar**")
-            st.dataframe(df_suspicious)
-
-            # 📥 CSV olarak indirme butonu ekle
-            csv_suspicious = df_suspicious.to_csv(index=False, sep=";").encode("utf-8")
-            st.download_button("📥 Şüpheli Tesisatları İndir", csv_suspicious, "supheli_tesisatlar.csv", "text/csv")
+        if df_zdm240_filtered.empty:
+            st.warning("⚠️ Analiz sonuçlarındaki tesisatlar ZDM240 dosyasında bulunamadı!")
         else:
-            st.success("✅ Şüpheli tesisat bulunamadı.")
+            # 🔹 Sayısal sütunları temizle: Binlik noktaları kaldır, ondalık virgülleri koru
+            def clean_numeric_columns(df):
+                df = df.copy()
+                for col in df.columns[2:]:  # İlk iki sütun hariç (Tesisat, Mali yıl)
+                    df[col] = df[col].astype(str).str.replace(".", "", regex=True).str.replace(",", ".", regex=True)
+                    df[col] = pd.to_numeric(df[col], errors="coerce")  # Sayısal hale getir
+                return df
 
-    except Exception as e:
-        st.error(f"⚠️ Hata: {str(e)}")
+            df_zdm240_filtered = clean_numeric_columns(df_zdm240_filtered)
+
+            # 🔹 Aynı tesisat ve mali yıl için verileri topla
+            df_zdm240_grouped = df_zdm240_filtered.groupby(["Tesisat", "Mali yıl"]).sum().reset_index()
+
+            # 🔹 Çeyrekleri (Q1, Q2, Q3, Q4) hesapla
+            df_zdm240_grouped["Q1"] = df_zdm240_grouped[["Tük_Mart", "Tük_Nisan", "Tük_Mayıs"]].sum(axis=1)
+            df_zdm240_grouped["Q2"] = df_zdm240_grouped[["Tük_Haziran", "Tük_Temmuz", "Tük_Ağustos"]].sum(axis=1)
+            df_zdm240_grouped["Q3"] = df_zdm240_grouped[["Tük_Eylül", "Tük_Ekim", "Tük_Kasım"]].sum(axis=1)
+            df_zdm240_grouped["Q4"] = df_zdm240_grouped[["Tük_Aralık", "Tük_Ocak", "Tük_Şubat"]].sum(axis=1)
+
+            # 📊 Düzenlenmiş verileri göster
+            st.subheader("📊 **Filtrelenmiş ve Düzenlenmiş ZDM240 Verisi**")
+            st.dataframe(df_zdm240_grouped)
+
+            # 📥 Kullanıcıya CSV olarak indirme seçeneği sun
+            csv = df_zdm240_grouped.to_csv(index=False, sep=";").encode("utf-8")
+            st.download_button("📥 Düzenlenmiş ve Filtrelenmiş ZDM240 Verisini İndir", csv, "zdm240_filtrelenmis.csv", "text/csv")
+
+            # 🔹 Kullanıcıdan düşüş eşiği parametresi al
+            st.subheader("📉 **Şüpheli Tesisat Analizi**")
+            threshold_percentage = st.number_input("Düşüş eşiği (%):", min_value=1, max_value=100, value=30)
+
+            # 🔍 Şüpheli tesisatları belirleme
+            suspicious_tesisats = []
+            for tesisat in df_zdm240_grouped["Tesisat"].unique():
+                df_tesisat = df_zdm240_grouped[df_zdm240_grouped["Tesisat"] == tesisat].sort_values(by="Mali yıl")
+                for q in ["Q1", "Q2", "Q3", "Q4"]:
+                    overall_avg = df_tesisat[q].mean()  # Tüm yılların ortalamasını hesapla
+                    
+                    # Eğer değer, ortalamanın belirli bir yüzdesinden daha düşükse şüpheli olarak işaretle
+                    below_threshold = df_tesisat[q] < (overall_avg * (1 - threshold_percentage / 100))
+                    
+                    if below_threshold.any():
+                        for idx, is_suspicious in enumerate(below_threshold):
+                            if is_suspicious:
+                                suspicious_tesisats.append({
+                                    "Tesisat": tesisat,
+                                    "Mali Yıl": df_tesisat.iloc[idx]["Mali yıl"],
+                                    "Çeyrek": q,
+                                    "Değer": df_tesisat.iloc[idx][q],
+                                    "Ortalama": overall_avg,
+                                    "Düşüş (%)": ((overall_avg - df_tesisat.iloc[idx][q]) / overall_avg) * 100
+                                })
+
+            # 📊 Sonuçları ekrana yazdır
+            if suspicious_tesisats:
+                df_suspicious = pd.DataFrame(suspicious_tesisats)
+                st.subheader("⚠️ **Şüpheli Tesisatlar (Filtrelenmiş)**")
+                st.dataframe(df_suspicious)
+
+                # 📥 CSV olarak indirme butonu ekle
+                csv_suspicious = df_suspicious.to_csv(index=False, sep=";").encode("utf-8")
+                st.download_button("📥 Şüpheli Tesisatları İndir", csv_suspicious, "supheli_tesisatlar.csv", "text/csv")
+            else:
+                st.success("✅ Şüpheli tesisat bulunamadı.")
+
+
+
