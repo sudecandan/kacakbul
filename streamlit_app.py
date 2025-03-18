@@ -6,7 +6,7 @@ import shutil
 
 import numpy as np
 from io import BytesIO
-from openpyxl import load_workbook
+
 from openpyxl.drawing.image import Image
 
 # STREAMLIT BAŞLIĞI
