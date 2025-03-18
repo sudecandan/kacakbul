@@ -7,7 +7,7 @@ import shutil
 import numpy as np
 from io import BytesIO
 
-from openpyxl.drawing.image import Image
+
 
 # STREAMLIT BAŞLIĞI
 st.title("⚡ KaçakBul")
