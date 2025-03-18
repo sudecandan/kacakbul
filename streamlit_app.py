@@ -344,7 +344,7 @@ if st.session_state["admin_authenticated"]:
 
     for list_name, file_path in FILE_PATHS.items():
         st.sidebar.write(f"📌 **{list_name}**")
-        uploaded_file = st.sidebar.file_uploader(f"{list_name} Dosya Yükleyin", type=["csv"])
+        uploaded_file = st.sidebar.file_uploader(f"{list_name} Dosya Yükleyin", type=["csv"], key=list_name)
         
         if uploaded_file:
             try:
@@ -360,7 +360,15 @@ if st.session_state["admin_authenticated"]:
     # Admin çıkış yapma butonu
     if st.sidebar.button("🚪 Çıkış Yap"):
         st.session_state["admin_authenticated"] = False
-        st.sidebar.warning("🔒 Admin çıkış yaptı!")
+        st.rerun()  # Admin çıkış yaptığında sayfa yenilenecek ve yükleme yerleri kapanacak
 
+# 🔹 **Admin giriş yapmasa bile sistemde kayıtlı listeler saklanır**
+else:
+    st.sidebar.subheader("📌 Kayıtlı Listeler")
+    for list_name, file_path in FILE_PATHS.items():
+        if os.path.exists(file_path):
+            st.sidebar.write(f"📄 **{list_name}** → [Sisteme Kayıtlı]")
+        else:
+            st.sidebar.write(f"⚠️ **{list_name}** → [Yüklenmedi]")
 
 
