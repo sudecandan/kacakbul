@@ -8,7 +8,20 @@ import numpy as np
 from io import BytesIO
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image
-pip install matplotlib openpyxl
+
+import subprocess
+import sys
+
+# Eksik kütüphaneleri yükle
+def install_libraries():
+    try:
+        import matplotlib
+        import openpyxl
+    except ModuleNotFoundError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "matplotlib", "openpyxl"])
+
+install_libraries()
+
 
 
 
