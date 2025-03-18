@@ -398,7 +398,6 @@ if st.button("🚀 Analizi Başlat"):
 
 # 🔍 **Q Analizi Başlat**
 if st.button("📉 Q Analizini Başlat"):
-    st.subheader("📊 Q Analizi Başlatıldı!")
 
     # 📂 Analiz sonuçları dosyasını oku
     if not os.path.exists("analiz_sonuclari.csv"):
