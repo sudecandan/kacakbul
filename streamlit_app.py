@@ -172,7 +172,7 @@ with col1:
 # 🔵 **Düşüş Parametreleri**
 st.markdown("### 📉 Düşüş Parametreleri")
 
-col1, col2 = st.columns([1, 1])
+col1, col2, col3 = st.columns([1, 1])
 
 with col1:
     st.markdown("#### 📉 **P Analizi İçin**")
@@ -183,6 +183,10 @@ with col2:
     st.markdown("#### 📉 **T Analizi İçin**")
     decrease_percentage_t = st.number_input("📉 T Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=50)
     decrease_count_t = st.number_input("🔄 T Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=5)
+
+with col3 :
+    decrease_percentage_q = st.number_input("📉 Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
+
 
 # **Seçili analizleri belirleme**
 selected_analysis = [key for key, value in st.session_state.selected_analysis.items() if value]
