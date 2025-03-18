@@ -382,9 +382,8 @@ if zdm240_file and st.button("📌 ZDM240 Verilerini Düzenle"):
         # Sayısal sütunlardan binlik ayırıcıları kaldır ve float formatına çevir
         for col in df.columns:
             if "Tük_" in col or col in ["Tüketim Toplam", "Gün Toplam"]:
-                df[col] = df[col].astype(str).str.replace(".", "", regex=True)  # Sadece noktaları siler
+                df[col] = df[col].astype(str).str.replace(r"\.(?=\d{3}(?:\D|$))", "", regex=True)  # Binlik noktaları kaldır
                 df[col] = pd.to_numeric(df[col], errors="coerce")  # Sayıya çevir
-
 
         # Aynı yıl ve tesisata ait verileri birleştirerek toplamak
         df = df.groupby(["Tesisat", "Mali yıl"], as_index=False).sum()
@@ -400,7 +399,7 @@ if zdm240_file and st.button("📌 ZDM240 Verilerini Düzenle"):
     # 🔄 Veriyi temizle
     df_zdm240_cleaned = clean_zdm240(df_zdm240)
 
-
+    st.success("✅ ZDM240 Verileri Temizlendi!")
 
     # 📈 **Mevsimsel Q1, Q2, Q3, Q4 hesaplama**
     def calculate_seasonal_quarters(df):
