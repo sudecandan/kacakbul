@@ -7,7 +7,7 @@ from io import BytesIO
 st.title("⚡ KaçakBul")
 
 # Kullanıcıdan dosya yükleme için iki sütun
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 
 with col1:
     el31_file = st.file_uploader("📂 EL31 Dosyasını Yükleyin (.csv)", type=["csv"])
