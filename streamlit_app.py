@@ -1,7 +1,13 @@
 import streamlit as st
 import pandas as pd
 import zipfile
+import os
+import shutil
+import matplotlib.pyplot as plt
+import numpy as np
 from io import BytesIO
+from openpyxl import load_workbook
+from openpyxl.drawing.image import Image
 
 # STREAMLIT BAŞLIĞI
 st.title("⚡ KaçakBul")
@@ -132,10 +138,11 @@ if zblir_file and st.button("📌 ZBLIR_002 Verilerini Düzenle"):
 
 
 
-
-
-
 #BURAYA KADAR OKEYYYYYYYYYY
+
+
+
+
 
 # 📊 Kullanıcıdan analiz için giriş al
 col1, col2 = st.columns([1, 1])  
@@ -283,4 +290,143 @@ if st.button("🚀 Analizi Başlat"):
         )
     else:
         st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
+
+
+
+
+#BURAYA KADAR DA OKEY
+
+
+# **EL31 ve ZBLIR ZIP Dosyalarını Grafiklemek için Buton**
+if st.button("📊 Grafikleri Oluştur ve İndir"):
+
+    st.subheader("📊 Grafikleme İşlemi Başlatıldı")
+
+    # **Geçici Klasörler Oluştur**
+    temp_folder_el31 = "temp_el31_xlsx"
+    temp_folder_zblir = "temp_zblir_xlsx"
+    output_folder = "output_xlsx_with_charts"
+
+    os.makedirs(temp_folder_el31, exist_ok=True)
+    os.makedirs(temp_folder_zblir, exist_ok=True)
+    os.makedirs(output_folder, exist_ok=True)
+
+    # **EL31 ve ZBLIR ZIP Dosyalarının Yolu**
+    el31_zip_path = "el31_duzenlenmis.zip"
+    zblir_zip_path = "zblir_duzenlenmis.zip"
+
+    # **ZIP Dosyalarını Aç ve İçindeki Dosyaları Çıkart**
+    with zipfile.ZipFile(el31_zip_path, 'r') as zip_ref:
+        zip_ref.extractall(temp_folder_el31)
+
+    with zipfile.ZipFile(zblir_zip_path, 'r') as zip_ref:
+        zip_ref.extractall(temp_folder_zblir)
+
+    # **Tüm Çıkartılan Excel Dosyalarını İşle**
+    for folder in [temp_folder_el31, temp_folder_zblir]:
+        for file_name in os.listdir(folder):
+            if file_name.endswith('.csv'):
+                file_path = os.path.join(folder, file_name)
+
+                # **CSV Dosyasını Okuma**
+                df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
+
+                # **Gerekli Sütunları Kontrol Et**
+                required_columns = ['İlk Okuma Tarihi', 'Son Okuma Tarihi', 'Ortalama Tüketim', 'Muhatap Adı', 'Endeks Türü']
+                if not all(col in df.columns for col in required_columns):
+                    st.warning(f"Hata: {file_name} dosyasında eksik sütunlar var, atlanıyor.")
+                    continue
+
+                # **Tarihleri Düzenleme**
+                df['İlk Okuma Tarihi'] = pd.to_datetime(df['İlk Okuma Tarihi'], errors='coerce')
+                df['Son Okuma Tarihi'] = pd.to_datetime(df['Son Okuma Tarihi'], errors='coerce')
+                df = df.sort_values(by='İlk Okuma Tarihi')
+
+                # **X Ekseni için Tarihlerin Birleştirilmesi**
+                df['Tarih'] = df['İlk Okuma Tarihi'].combine_first(df['Son Okuma Tarihi'])
+
+                # **Ortalama Tüketimi Sayısal Formata Çevir**
+                df['Ortalama Tüketim'] = pd.to_numeric(df['Ortalama Tüketim'], errors='coerce')
+
+                # **Endeks Türlerine Göre Ayrı Grafikler**
+                unique_endeks_types = df['Endeks Türü'].dropna().unique()
+
+                # **Excel Dosyasını Aç ve Grafikleri Ekleyelim**
+                excel_filename = os.path.splitext(file_name)[0] + ".xlsx"
+                excel_path = os.path.join(output_folder, excel_filename)
+                df.to_excel(excel_path, index=False)
+
+                wb = load_workbook(excel_path)
+                ws = wb.active
+
+                for endeks in unique_endeks_types:
+                    df_filtered = df[df['Endeks Türü'] == endeks]
+
+                    if df_filtered.empty:
+                        continue
+
+                    y_values = df_filtered['Ortalama Tüketim']
+                    x_values = df_filtered['Tarih']
+
+                    avg_consumption = np.nanmean(y_values)
+
+                    # **Muhatap Değişimlerini Belirle**
+                    muhatap_degisimleri = df_filtered[df_filtered['Muhatap Adı'] != df_filtered['Muhatap Adı'].shift()]
+
+                    # **Grafik Oluşturma**
+                    plt.figure(figsize=(10, 5))
+                    plt.plot(x_values, y_values, marker='o', linestyle='-', color='b', label="Ortalama Tüketim")
+                    plt.axhline(y=avg_consumption, color='r', linestyle='--', label="Ortalama Tüketim Ortalaması")
+
+                    for _, row in muhatap_degisimleri.iterrows():
+                        plt.axvline(x=row['Tarih'], color='g', linestyle=':', label="Muhatap Değişimi")
+
+                    plt.text(x_values.iloc[-1], avg_consumption, f"Ortalama: {avg_consumption:.2f}",
+                             verticalalignment='bottom', horizontalalignment='right', color='r', fontsize=10, fontweight='bold')
+
+                    plt.xlabel("Tarih")
+                    plt.ylabel("Ortalama Tüketim")
+                    plt.title(f"{file_name} - {endeks} Endeks Türü")
+                    plt.xticks(rotation=45)
+                    plt.legend()
+                    plt.grid()
+
+                    # **Grafiği Hafızaya Kaydet**
+                    img_stream = BytesIO()
+                    plt.savefig(img_stream, format='png')
+                    plt.close()
+
+                    # **Grafiği Excel'e Ekle**
+                    img = Image(img_stream)
+                    img.anchor = f"J{10 * (list(unique_endeks_types).index(endeks) + 1)}"
+                    ws.add_image(img)
+
+                # **Yeni Dosya Olarak Kaydet**
+                wb.save(excel_path)
+
+    # **Grafikli Dosyaları Yeni ZIP'e Kaydet**
+    output_zip_buffer = BytesIO()
+    with zipfile.ZipFile(output_zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for file_name in os.listdir(output_folder):
+            file_path = os.path.join(output_folder, file_name)
+            zipf.write(file_path, arcname=file_name)
+
+    output_zip_buffer.seek(0)
+
+    # **Sonuçları Göster ve İndirme Butonu**
+    st.success("✅ Grafikler oluşturuldu ve Excel dosyalarına eklendi!")
+    st.download_button(
+        "📥 Grafikli Dosyaları ZIP Olarak İndir",
+        output_zip_buffer,
+        "grafikli_dosyalar.zip",
+        "application/zip"
+    )
+
+    # **Geçici Klasörleri Temizle**
+    shutil.rmtree(temp_folder_el31)
+    shutil.rmtree(temp_folder_zblir)
+    shutil.rmtree(output_folder)
+
+
+
 
