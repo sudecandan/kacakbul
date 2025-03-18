@@ -360,7 +360,5 @@ if st.session_state["admin_logged_in"]:
         st.session_state["admin_logged_in"] = False
         st.sidebar.warning("Admin çıkış yaptı!")
 
-# 🔴 **Admin Giriş Yapmadıysa Listeleri Değiştiremez**
-elif st.session_state["show_admin_login"]:
-    st.sidebar.warning("⚠️ Admin giriş yapmadan listeler değiştirilemez!")
+
 
