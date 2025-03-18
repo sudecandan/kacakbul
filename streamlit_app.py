@@ -386,13 +386,7 @@ if st.session_state["admin_authenticated"]:
 
 
 
-# 🔵 **Düşüş Parametreleri**
-st.markdown("### 📉 Düşüş Parametreleri")
 
-col1, col2 = st.columns(2)
-
-with col1:
-    decrease_percentage_q = st.number_input("📉 Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
 
 # 🚀 **Analizi Başlat Butonu**
 if st.button("🚀 T ve P Analizini Başlat"):
