@@ -222,7 +222,49 @@ selected_analysis = [key for key, value in st.session_state.selected_analysis.it
 
 
 
+import streamlit as st
+import pandas as pd
+import os
 
+# 📌 **Saklanacak dosya yolları**
+FILE_PATHS = {
+    "Sektör Listesi": "sector_list.csv",
+    "Sektör Puan Listesi": "sector_score_list.csv",
+    "Çarpan Listesi": "multiplier_list.csv",
+    "Çarpan Puan Listesi": "multiplier_score_list.csv",
+    "Mahalle Listesi": "neighborhood_list.csv",
+    "Mahalle Puan Listesi": "neighborhood_score_list.csv",
+    "Şube Kablo Değişme Listesi": "cable_change_list.csv",
+    "Şube Kablo Değişme Puan Listesi": "cable_change_score_list.csv",
+    "Çarpan Değişme Listesi": "multiplier_change_list.csv",
+    "Çarpan Değişme Puan Listesi": "multiplier_change_score_list.csv",
+    "Son 4 Yıl Kaçak Tesisat Listesi": "theft_last_4_years.csv",
+}
+
+# 📌 **Varsayılan Listeleri Oluştur (Eğer yoksa)**
+for file in FILE_PATHS.values():
+    if not os.path.exists(file):
+        pd.DataFrame(columns=["Değer"]).to_csv(file, index=False, sep=";")
+
+# --- SESSION STATE (Admin Giriş için) ---
+if "admin_authenticated" not in st.session_state:
+    st.session_state["admin_authenticated"] = False
+
+# --- ADMIN PANELI GIRIŞI ---
+def admin_login():
+    """Admin giriş ekranı."""
+    st.sidebar.subheader("🔐 Admin Girişi")
+    username = st.sidebar.text_input("Kullanıcı Adı")
+    password = st.sidebar.text_input("Şifre", type="password")
+    
+    if st.sidebar.button("Giriş Yap"):
+        if username == "admin" and password == "password123":  # Şifre değiştirilebilir
+            st.session_state["admin_authenticated"] = True
+            st.sidebar.success("✅ Başarıyla giriş yapıldı!")
+        else:
+            st.sidebar.error("🚫 Hatalı kullanıcı adı veya şifre!")
+
+admin_login()
 
 # 🟠 **Admin Paneli Açıldıysa Listeler Yönetilebilir**
 if st.session_state["admin_authenticated"]:
@@ -255,88 +297,7 @@ if st.session_state["admin_authenticated"]:
 
 
 
-# 📌 **Admin erişim kontrolü**
-if "admin_authenticated" not in st.session_state:
-    st.session_state["admin_authenticated"] = False
-if "admin_username" not in st.session_state:
-    st.session_state["admin_username"] = ""
-if "admin_password" not in st.session_state:
-    st.session_state["admin_password"] = ""
 
-# --- ADMIN PANELI GIRIŞI ---
-def admin_login():
-    """Admin giriş ekranı."""
-    st.sidebar.subheader("🔐 Admin Girişi")
-
-    # Kullanıcı adı ve şifre alanlarını session_state'e bağladık
-    username = st.sidebar.text_input("Kullanıcı Adı", value=st.session_state["admin_username"])
-    password = st.sidebar.text_input("Şifre", type="password", value=st.session_state["admin_password"])
-
-    if st.sidebar.button("Giriş Yap"):
-        if username == "admin" and password == "123":  # Şifreyi ihtiyacına göre değiştir
-            st.session_state["admin_authenticated"] = True
-            st.session_state["admin_username"] = username  # Kaydediyoruz
-            st.session_state["admin_password"] = password
-            st.sidebar.success("✅ Başarıyla giriş yapıldı!")
-        else:
-            st.sidebar.error("🚫 Hatalı kullanıcı adı veya şifre!")
-
-    # **Çıkış Butonu**
-    if st.session_state["admin_authenticated"]:
-        if st.sidebar.button("🚪 Çıkış Yap"):
-            st.session_state["admin_authenticated"] = False
-            st.session_state["admin_username"] = ""  # Kullanıcı adını sıfırla
-            st.session_state["admin_password"] = ""  # Şifreyi sıfırla
-            st.sidebar.success("✅ Başarıyla çıkış yapıldı!")
-            st.rerun()  # Sayfayı yenile
-
-admin_login()
-
-# **Admin Paneli Açıldıysa Listeleri Yönet**
-if st.session_state["admin_authenticated"]:
-    st.sidebar.subheader("📂 Listeleri Güncelle")
-
-    # 📌 Güncellenecek dosyalar
-    FILE_PATHS = {
-    "Sektör Listesi": "sector_list.csv",
-    "Sektör Puan Listesi": "sector_score_list.csv",
-    "Çarpan Listesi": "multiplier_list.csv",
-    "Çarpan Puan Listesi": "multiplier_score_list.csv",
-    "Mahalle Listesi": "neighborhood_list.csv",
-    "Mahalle Puan Listesi": "neighborhood_score_list.csv",
-    "Şube Kablo Değişme Listesi": "cable_change_list.csv",
-    "Şube Kablo Değişme Puan Listesi": "cable_change_score_list.csv",
-    "Çarpan Değişme Listesi": "multiplier_change_list.csv",
-    "Çarpan Değişme Puan Listesi": "multiplier_change_score_list.csv",
-    "Son 4 Yıl Kaçak Tesisat Listesi": "theft_last_4_years.csv",
-    }
-
-    
-    for list_name, file_path in FILE_PATHS.items():
-        uploaded_file = st.sidebar.file_uploader(f"📌 {list_name} Dosya Yükleyin", type=["csv"], key=list_name)
-        
-        if uploaded_file:
-            try:
-                df = pd.read_csv(uploaded_file, encoding="utf-8", delimiter=";", low_memory=False)
-                df.to_csv(file_path, index=False, sep=";")
-                st.sidebar.success(f"✅ {list_name} güncellendi!")
-            except Exception as e:
-                st.sidebar.error(f"⚠️ Hata: Dosya yüklenemedi! {str(e)}")
-
-# 📌 **Admin giriş yaptıysa ağırlıkları girebilir**
-if st.session_state["admin_authenticated"]:
-    st.sidebar.subheader("⚖️ Ağırlık Katsayılarını Girin")
-
-    sektor_weight = st.sidebar.number_input("Sektör Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.30)
-    carpan_weight = st.sidebar.number_input("Çarpan Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.20)
-    mahalle_weight = st.sidebar.number_input("Mahalle Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.30)
-    sube_kablo_weight = st.sidebar.number_input("Şube Kablo Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.20)
-
-    # 📌 Ağırlıkların toplamı 1 mi kontrol et
-    if round(sektor_weight + carpan_weight + mahalle_weight + sube_kablo_weight, 2) != 1.00:
-        st.sidebar.error("❌ Ağırlık katsayılarının toplamı **1 olmalıdır!**")
-    else:
-        st.sidebar.success("✅ Ağırlık katsayıları başarıyla girildi!")
 
 
 
