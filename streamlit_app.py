@@ -286,9 +286,16 @@ if st.session_state["admin_authenticated"]:
 
 
 
-# **Analizi Başlat Butonu**
-if st.button("🚀 Analizi Başlat"):
 
+
+
+
+# 📌 **Analiz Sonuçlarını Sabit Tutmak için Session State Kullanımı**
+if "analysis_results" not in st.session_state:
+    st.session_state.analysis_results = None
+
+# 📌 **Analizi Başlat Butonu**
+if st.button("🚀 Analizi Başlat"):
     combined_results = {}
 
     # **P Analizi Seçildiyse Çalıştır**
@@ -320,26 +327,6 @@ if st.button("🚀 Analizi Başlat"):
 
     # **T Analizleri Seçildiyse Çalıştır**
     if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]):
-
-        def calc_avg(df, endeks_turu, threshold_ratio):
-            filtered_df = df[df["Endeks Türü"] == endeks_turu].copy()
-            if filtered_df.empty:
-                return None
-
-            filtered_df["Ortalama Tüketim"] = pd.to_numeric(
-                filtered_df["Ortalama Tüketim"].astype(str).str.replace(",", ".", regex=True), errors="coerce"
-            )
-            nonzero_values = filtered_df["Ortalama Tüketim"].dropna()
-            nonzero_values = nonzero_values[nonzero_values > 0].tolist()
-
-            if not nonzero_values:
-                return None
-
-            avg_value = sum(nonzero_values) / len(nonzero_values)
-            threshold_value = avg_value * (1 - threshold_ratio / 100)
-
-            return avg_value, threshold_value
-
         def analyze_tesisat_data(df, threshold_ratio, below_threshold_limit):
             for tesisat, group in df.groupby("Tesisat"):
                 suspicious_endeks_types = []
@@ -348,11 +335,8 @@ if st.button("🚀 Analizi Başlat"):
                     if endeks_turu + " Analizi" not in selected_analysis:
                         continue
 
-                    result = calc_avg(group, endeks_turu, threshold_ratio)
-                    if result is None:
-                        continue
-
-                    avg_value, threshold_value = result
+                    avg_value = group[group["Endeks Türü"] == endeks_turu]["Ortalama Tüketim"].mean()
+                    threshold_value = avg_value * (1 - threshold_ratio / 100)
 
                     below_threshold_count = sum(
                         1
@@ -372,26 +356,51 @@ if st.button("🚀 Analizi Başlat"):
 
         analyze_tesisat_data(df_zblir, decrease_percentage_t, decrease_count_t)
 
+    # **Sonuçları DataFrame'e Dönüştür ve Session State'e Kaydet**
     if combined_results:
         df_combined = pd.DataFrame(list(combined_results.items()), columns=["Şüpheli Tesisat", "Şüpheli Analiz Türleri"])
         df_combined["Şüpheli Analiz Türleri"] = df_combined["Şüpheli Analiz Türleri"].apply(lambda x: ", ".join(x))
+        df_combined.index += 1  # 1'den başlasın
 
-        # **İndeksi 1’den başlat**
-        df_combined.index += 1  
-
-        # **Sonuçları Göster**
-        st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_combined)} şüpheli tesisat bulundu.**")
-        st.dataframe(df_combined)
-
-        # **Tek bir CSV dosyası olarak indir**
-        st.download_button(
-            "📥 Analiz Sonuçlarını İndir",
-            df_combined.to_csv(sep=";", index=True).encode("utf-8"),  # index=True ile yeni indeksleri de ekliyoruz
-            "analiz_sonuclari.csv",
-            "text/csv"
-        )
+        st.session_state.analysis_results = df_combined  # **Session State'e Kaydet**
     else:
-        st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
+        st.session_state.analysis_results = None  # Eğer sonuç yoksa sıfırla
+
+
+
+
+# 📌 **Eğer analiz sonuçları varsa, ekranda sürekli göster**
+if st.session_state.analysis_results is not None:
+    st.success(f"✅ Analizler Tamamlandı! **Toplam {len(st.session_state.analysis_results)} şüpheli tesisat bulundu.**")
+    st.dataframe(st.session_state.analysis_results)
+
+    # 📌 **Tıklanabilir Tesisat Numaraları**
+    for index, row in st.session_state.analysis_results.iterrows():
+        if st.button(f"📊 {row['Şüpheli Tesisat']} Grafiğini Göster", key=row["Şüpheli Tesisat"]):
+            st.session_state.selected_tesisat = row["Şüpheli Tesisat"]
+
+    # 📌 **Seçili tesisatın grafiğini göster**
+    if "selected_tesisat" in st.session_state:
+        tesisat_no = st.session_state.selected_tesisat
+        st.subheader(f"📈 {tesisat_no} Numaralı Tesisatın Grafiği")
+
+        # 📌 **Örnek Grafik**
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
+        ax.set_title(f"Tesisat {tesisat_no} Tüketim Grafiği")
+        ax.set_ylabel("Tüketim (kWh)")
+        ax.set_xlabel("Aylar")
+        st.pyplot(fig)
+
+
+
+
+
+
+
+
+
 
 
 
