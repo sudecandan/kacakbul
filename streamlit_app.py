@@ -421,33 +421,19 @@ if st.session_state.analysis_results is not None:
 
 
 
-# 📌 **Analiz Sonuçlarını Göster**
-if st.session_state.analysis_results is not None:
-    st.success(f"✅ Analizler Tamamlandı! **Toplam {len(st.session_state.analysis_results)} şüpheli tesisat bulundu.**")
+# 📌 **Analiz Sonuçlarını Tablo Olarak Göster**
+st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_combined)} şüpheli tesisat bulundu.**")
 
-    # 📌 **Tabloyu AgGrid ile Göster**
-    df_combined = st.session_state.analysis_results
-    gb = GridOptionsBuilder.from_dataframe(df_combined)
-    gb.configure_selection(selection_mode="single", use_checkbox=True)  # Checkbox ile seçim ekle
-    grid_options = gb.build()
+# 📌 **Tabloyu oluştur + Butonları ekle**
+for index, row in df_combined.iterrows():
+    col1, col2 = st.columns([3, 1])  # İlk sütunda tesisat numarası, ikinci sütunda buton
+    with col1:
+        st.write(f"🔹 **{row['Şüpheli Tesisat']}** - {row['Şüpheli Analiz Türleri']}")
+    with col2:
+        if st.button(f"📊 Göster", key=row["Şüpheli Tesisat"]):
+            st.session_state.selected_tesisat = row["Şüpheli Tesisat"]
 
-    grid_response = AgGrid(
-        df_combined,
-        gridOptions=grid_options,
-        update_mode=GridUpdateMode.SELECTION_CHANGED,
-        enable_enterprise_modules=False
-    )
-
-    # 📌 **HATA KORUMASI: Eğer grid_response boş veya None ise işlem yapma**
-    if grid_response and "selected_rows" in grid_response and grid_response["selected_rows"]:
-        selected_rows = grid_response["selected_rows"]
-        if selected_rows:
-            selected_tesisat = selected_rows[0]["Şüpheli Tesisat"]
-            st.session_state.selected_tesisat = selected_tesisat  # Seçili tesisatı kaydet
-        else:
-            st.session_state.selected_tesisat = None  # Seçim kaldırıldığında sıfırla
-
-# 📌 **Eğer bir tesisat seçildiyse grafiği göster**
+# 📌 **Seçili tesisatın grafiğini göster**
 if st.session_state.selected_tesisat:
     st.subheader(f"📈 {st.session_state.selected_tesisat} Numaralı Tesisatın Grafiği")
 
