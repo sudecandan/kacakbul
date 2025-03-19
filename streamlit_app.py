@@ -392,6 +392,10 @@ if st.button("🚀 Analizi Başlat"):
         st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_combined)} şüpheli tesisat bulundu.**")
         st.dataframe(df_combined)
 
+
+        # 📌 **Analiz Sonuçlarını Session State'e Kaydet**
+        st.session_state.analysis_results = df_combined 
+
         # **Tek bir CSV dosyası olarak indir**
         st.download_button(
             "📥 Analiz Sonuçlarını İndir",
