@@ -236,7 +236,14 @@ for file in FILE_PATHS.values():
     if not os.path.exists(file):
         pd.DataFrame(columns=["Değer"]).to_csv(file, index=False, sep=";")
 
-# 📌 Admin erişim kontrolü
+
+
+
+
+
+
+
+# 📌 **Admin erişim kontrolü**
 if "admin_authenticated" not in st.session_state:
     st.session_state["admin_authenticated"] = False
 if "admin_username" not in st.session_state:
@@ -244,46 +251,61 @@ if "admin_username" not in st.session_state:
 if "admin_password" not in st.session_state:
     st.session_state["admin_password"] = ""
 
-
-
 # --- ADMIN PANELI GIRIŞI ---
 def admin_login():
     """Admin giriş ekranı."""
     st.sidebar.subheader("🔐 Admin Girişi")
-    username = st.sidebar.text_input("Kullanıcı Adı")
-    password = st.sidebar.text_input("Şifre", type="password")
-    
+
+    # Kullanıcı adı ve şifre alanlarını session_state'e bağladık
+    username = st.sidebar.text_input("Kullanıcı Adı", value=st.session_state["admin_username"])
+    password = st.sidebar.text_input("Şifre", type="password", value=st.session_state["admin_password"])
+
     if st.sidebar.button("Giriş Yap"):
-        if username == "admin" and password == "123":  # Şifre değiştirilebilir
+        if username == "admin" and password == "123":  # Şifreyi ihtiyacına göre değiştir
             st.session_state["admin_authenticated"] = True
+            st.session_state["admin_username"] = username  # Kaydediyoruz
+            st.session_state["admin_password"] = password
             st.sidebar.success("✅ Başarıyla giriş yapıldı!")
         else:
             st.sidebar.error("🚫 Hatalı kullanıcı adı veya şifre!")
 
+    # **Çıkış Butonu**
+    if st.session_state["admin_authenticated"]:
+        if st.sidebar.button("🚪 Çıkış Yap"):
+            st.session_state["admin_authenticated"] = False
+            st.session_state["admin_username"] = ""  # Kullanıcı adını sıfırla
+            st.session_state["admin_password"] = ""  # Şifreyi sıfırla
+            st.sidebar.success("✅ Başarıyla çıkış yapıldı!")
+            st.rerun()  # Sayfayı yenile
+
 admin_login()
 
-# 🟠 **Admin Paneli Açıldıysa Listeler Yönetilebilir**
+# **Admin Paneli Açıldıysa Listeleri Yönet**
 if st.session_state["admin_authenticated"]:
     st.sidebar.subheader("📂 Listeleri Güncelle")
+
+    # 📌 Güncellenecek dosyalar
+    FILE_PATHS = {
+        "Sektör Listesi": "sektor_list.csv",
+        "Çarpan Listesi": "carpan_list.csv",
+        "Mahalle Listesi": "mahalle_list.csv",
+        "Şube Kablo Listesi": "sube_kablo_list.csv"
+    }
 
     for list_name, file_path in FILE_PATHS.items():
         uploaded_file = st.sidebar.file_uploader(f"📌 {list_name} Dosya Yükleyin", type=["csv"], key=list_name)
         
         if uploaded_file:
             try:
-                # Dosya okuma hatalarını önlemek için güvenlik artırıldı
                 df = pd.read_csv(uploaded_file, encoding="utf-8", delimiter=";", low_memory=False)
-                
-                # Format korunsun diye delimiter ile kaydet
                 df.to_csv(file_path, index=False, sep=";")
                 st.sidebar.success(f"✅ {list_name} güncellendi!")
             except Exception as e:
                 st.sidebar.error(f"⚠️ Hata: Dosya yüklenemedi! {str(e)}")
 
-
 # 📌 **Admin giriş yaptıysa ağırlıkları girebilir**
 if st.session_state["admin_authenticated"]:
-    st.sidebar.subheader("Ağırlık Katsayılarını Girin")
+    st.sidebar.subheader("⚖️ Ağırlık Katsayılarını Girin")
 
     sektor_weight = st.sidebar.number_input("Sektör Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.30)
     carpan_weight = st.sidebar.number_input("Çarpan Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.20)
@@ -299,16 +321,6 @@ if st.session_state["admin_authenticated"]:
 
 
 
-    # Çıkış butonu
-    if st.session_state["admin_authenticated"]:
-        if st.sidebar.button("🚪 Çıkış Yap"):
-            st.session_state["admin_authenticated"] = False
-            st.session_state["admin_username"] = ""  # Kullanıcı adını sıfırla
-            st.session_state["admin_password"] = ""  # Şifreyi sıfırla
-            st.sidebar.success("✅ Başarıyla çıkış yapıldı!")
-            st.rerun()  # Sayfayı yenile
-
-admin_login()
 
 
 #BURAYA KADAR OKEYDİR.
