@@ -188,7 +188,7 @@ with col3:
     st.markdown("### 📉 **Mevsimsel Dönem Analizi**")
     
     # Mevsimsel Dönem Analizi için checkbox
-    seasonal_analysis_enabled = st.checkbox("Mevsimsel Dönem Analizini Aktif Et")
+    seasonal_analysis_enabled = st.checkbox("Aktif")
 
     if seasonal_analysis_enabled:
         decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
