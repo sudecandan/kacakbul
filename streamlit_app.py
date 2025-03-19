@@ -426,8 +426,8 @@ if st.session_state.analysis_results is not None:
 st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_combined)} şüpheli tesisat bulundu.**")
 st.dataframe(df_combined)
 
-# 📌 **Tesisat Seçimi için Radio Butonu**
-selected_tesisat = st.radio("📌 Bir tesisat seçin:", df_combined["Şüpheli Tesisat"])
+# 📌 **Tesisat Seçimi için Selectbox**
+selected_tesisat = st.selectbox("📌 Bir tesisat seçin:", df_combined["Şüpheli Tesisat"])
 
 # 📌 **Seçim Yapıldıysa Grafiği Göster**
 if selected_tesisat:
