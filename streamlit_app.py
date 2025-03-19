@@ -575,9 +575,22 @@ if st.button("📊 **Tesisatları Sırala**"):
     # CSV Dosyalarını Oku
     sektor_list = pd.read_csv('sector_list.csv', dtype=str, delimiter=';')
     carpan_list = pd.read_csv('multiplier_list.csv', dtype=str, delimiter=';')
-    mahalle_list = pd.read_csv('neighborhood_list.csv', dtype=str, delimiter=';')
-    sube_kablo_list = pd.read_csv('cable_change_list.csv', dtype=str, delimiter=';')
-    supheli_sonuc = pd.read_csv('theft_last_4_years.csv', dtype=str, delimiter=';')
+    mahalle1_list = pd.read_csv('marmara1_neighborhood_list.csv',dtype=str, delimiter=';')
+    mahalle2_list = pd.read_csv('marmara2_neighborhood_list.csv', dtype=str, delimiter=';')
+    bogaz_list = pd.read_csv('bogaz_neighborhood_list.csv', dtype=str, delimiter=';')
+    karadeniz_list = pd.read_csv('karadeniz_neighborhood_list.csv', dtype=str, delimiter=';')
+    sube_kablo_list = pd.read_csv(cable_change_list.csv, dtype=str, delimiter=';')
+
+
+    # Ağırlık Değerlerini Al
+    sektor_weight = st.session_state["weights"]["Sektör Puanı Ağırlığı"]
+    carpan_weight = st.session_state["weights"]["Çarpan Puanı Ağırlığı"]
+    mahalle_weight = st.session_state["weights"]["Mahalle Puanı Ağırlığı"]
+    sube_kablo_weight = st.session_state["weights"]["Şube Kablo Puanı Ağırlığı"]
+
+
+    
+    
 
     # Tesisatlara ait verileri eşleştirme
     sektor_dict = dict(zip(sektor_list['Tesisat'], sektor_list['Nace Kodu']))
