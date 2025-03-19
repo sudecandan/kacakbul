@@ -420,27 +420,6 @@ if st.session_state.analysis_results is not None:
 
 
 
-# 📌 **Tesisat Seçimi için Selectbox**
-selected_tesisat = st.selectbox("📌 Bir tesisat seçin:", df_combined["Şüpheli Tesisat"])
-
-# 📌 **Seçim Yapıldıysa Grafiği Göster**
-if selected_tesisat:
-    st.session_state.selected_tesisat = selected_tesisat  # Session State'e Kaydet
-
-if st.session_state.selected_tesisat:
-    st.subheader(f"📈 {st.session_state.selected_tesisat} Numaralı Tesisatın Grafiği")
-
-    # 📌 **Örnek Grafik Çizimi**
-    fig, ax = plt.subplots()
-    ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
-    ax.set_title(f"Tesisat {st.session_state.selected_tesisat} Tüketim Grafiği")
-    ax.set_ylabel("Tüketim (kWh)")
-    ax.set_xlabel("Aylar")
-    st.pyplot(fig)
-
-
-
-
 
 
 
