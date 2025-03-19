@@ -277,7 +277,7 @@ if st.session_state["admin_authenticated"]:
 
 # 📌 **Admin giriş yaptıysa ağırlıkları girebilir**
 if st.session_state["admin_authenticated"]:
-    st.sidebar.subheader("Ağırlık Katsayılarını Girin)
+    st.sidebar.subheader("Ağırlık Katsayılarını Girin")
 
     sektor_weight = st.sidebar.number_input("Sektör Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.30)
     carpan_weight = st.sidebar.number_input("Çarpan Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.20)
