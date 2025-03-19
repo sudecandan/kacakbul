@@ -396,47 +396,38 @@ if st.button("🚀 Analizi Başlat"):
         st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
 
 
-
 import os
 
-# Analiz tamamlandıktan sonra CSV'yi kaydet
-file_path = os.path.join(os.getcwd(), "analiz_sonuclari.csv")
-df_combined.to_csv(file_path, sep=";", index=False, encoding="utf-8")
-
-# Dosyanın gerçekten kaydedildiğini doğrula
-st.write("📂 'analiz_sonuclari.csv' başarıyla kaydedildi mi?", os.path.exists(file_path))
-
-# Dosyayı Streamlit state'e kaydet (yenilenirse kaybolmaz)
-if "analiz_sonuclari" not in st.session_state:
-    st.session_state.analiz_sonuclari = df_combined
-
-
-
-
-import os
-
-st.write("📂 Mevcut dizindeki dosyalar:", os.listdir())
-
-# Eğer session_state içinde varsa doğrudan kullan
-if "analiz_sonuclari" in st.session_state:
-    df_analysis = st.session_state.analiz_sonuclari
-else:
+# P ve T Analizleri tamamlandıktan sonra CSV'yi kaydet
+if "df_combined" in locals() and not df_combined.empty:
     file_path = os.path.join(os.getcwd(), "analiz_sonuclari.csv")
+    df_combined.to_csv(file_path, sep=";", index=False, encoding="utf-8")
     
-    # Dosyanın gerçekten olup olmadığını kontrol et
-    if not os.path.exists(file_path):
-        st.error("⚠️ Önce P ve T analizini çalıştırmalısınız! Dosya bulunamadı.")
-        st.stop()
-    
-    df_analysis = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
+    # Session state içine kaydet
+    st.session_state["df_combined"] = df_combined
+
+    # Dosyanın gerçekten kaydedildiğini doğrula
+    st.write("📂 'analiz_sonuclari.csv' başarıyla kaydedildi mi?", os.path.exists(file_path))
+else:
+    st.error("⚠️ P ve T analizlerinde hiç şüpheli tesisat bulunamadı! Bu yüzden dosya oluşturulmadı.")
+
+
+
+
+
+if "df_combined" in st.session_state:
+    df_combined = st.session_state["df_combined"]
+else:
+    st.error("⚠️ P ve T analizlerini tekrar çalıştırmalısınız! Veri bulunamadı.")
+    st.stop()
 
 # ✅ Şüpheli tesisatları al
-if "Şüpheli Tesisat" not in df_analysis.columns:
-    alternative_column = df_analysis.columns[0]
-    df_analysis.rename(columns={alternative_column: "Şüpheli Tesisat"}, inplace=True)
+if "Şüpheli Tesisat" not in df_combined.columns:
+    alternative_column = df_combined.columns[0]
+    df_combined.rename(columns={alternative_column: "Şüpheli Tesisat"}, inplace=True)
     st.warning(f"⚠️ 'Şüpheli Tesisat' bulunamadı! Onun yerine '{alternative_column}' kullanılıyor.")
 
-suspicious_tesisats = df_analysis["Şüpheli Tesisat"].astype(str).tolist()
+suspicious_tesisats = df_combined["Şüpheli Tesisat"].astype(str).tolist()
 
 # 🔹 ZDM240 Verisini Kontrol Et
 st.write("📊 ZDM240 Veri Kontrolü:", df_zdm240.shape)
