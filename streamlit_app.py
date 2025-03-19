@@ -438,8 +438,8 @@ if st.session_state.analysis_results is not None:
         enable_enterprise_modules=False
     )
 
-    # 📌 **Seçili Tesisatın Grafiğini Göster**
-    if grid_response["selected_rows"]:  
+    # 📌 **HATA KORUMASI: Eğer grid_response boş veya None ise işlem yapma**
+    if grid_response and "selected_rows" in grid_response and grid_response["selected_rows"]:
         selected_rows = grid_response["selected_rows"]
         if selected_rows:
             selected_tesisat = selected_rows[0]["Şüpheli Tesisat"]
@@ -458,8 +458,6 @@ if st.session_state.selected_tesisat:
     ax.set_ylabel("Tüketim (kWh)")
     ax.set_xlabel("Aylar")
     st.pyplot(fig)
-
-
 
 
 
