@@ -395,6 +395,11 @@ if st.button("🚀 Analizi Başlat"):
     else:
         st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
 
+import os
+st.write("📂 'analiz_sonuclari.csv' mevcut mu?", os.path.exists("analiz_sonuclari.csv"))
+
+
+
 
 # 🔍 **Q Analizi Başlat**
 if st.button("📉 Q Analizini Başlat"):
