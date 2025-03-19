@@ -416,6 +416,38 @@ if st.session_state.analysis_results is not None:
 
 
 
+# 📌 **AgGrid ile Tıklanabilir Tablo**
+gb = GridOptionsBuilder.from_dataframe(st.session_state.analysis_results)
+gb.configure_selection(selection_mode="single", use_checkbox=False)  # Satır seçilebilir hale geldi
+grid_options = gb.build()
+
+grid_response = AgGrid(
+    st.session_state.analysis_results,
+    gridOptions=grid_options,
+    update_mode=GridUpdateMode.SELECTION_CHANGED,
+    enable_enterprise_modules=False,
+    height=300,
+    fit_columns_on_grid_load=True
+)
+
+# 📌 **Seçili Tesisatın Grafiğini Göster**
+if grid_response["selected_rows"]:
+    selected_row = grid_response["selected_rows"][0]
+    selected_tesisat = selected_row["Şüpheli Tesisat"]
+
+    # 📌 **Tesisat Seçildiğinde Grafik Göster**
+    st.subheader(f"📈 {selected_tesisat} Numaralı Tesisatın Grafiği")
+
+    # 📌 **Örnek Grafik Çizimi**
+    fig, ax = plt.subplots()
+    ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
+    ax.set_title(f"Tesisat {selected_tesisat} Tüketim Grafiği")
+    ax.set_ylabel("Tüketim (kWh)")
+    ax.set_xlabel("Aylar")
+    st.pyplot(fig)
+
+
+
 
 
 
