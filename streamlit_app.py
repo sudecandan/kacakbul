@@ -172,7 +172,7 @@ with col1:
 # 🔵 **Düşüş Parametreleri**
 st.markdown("### 📉 Düşüş Parametreleri")
 
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns(2)
 
 with col1:
     st.markdown("#### 📉 **P Analizi**")
@@ -184,14 +184,7 @@ with col2:
     decrease_percentage_t = st.number_input("T Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=50)
     decrease_count_t = st.number_input("T Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=5)
 
-with col3:
-    st.markdown("### 📉 **Mevsimsel Dönem Analizi**")
-    
-    # Mevsimsel Dönem Analizi için checkbox
-    seasonal_analysis_enabled = st.checkbox("Aktif")
 
-    if seasonal_analysis_enabled:
-        decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
 
 
 
@@ -403,6 +396,13 @@ if st.button("🚀 Analizi Başlat"):
 
 
 
+st.markdown("### 📉 **Mevsimsel Dönem Analizi**")
+    
+# Mevsimsel Dönem Analizi için checkbox
+seasonal_analysis_enabled = st.checkbox("Aktif")
+
+if seasonal_analysis_enabled:
+    decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
 
 
 
