@@ -564,4 +564,4 @@ if st.button("📊 **Tesisatları Sırala**"):
 
 
 
-pip install pyinstaller
+
