@@ -325,36 +325,48 @@ if st.button("🚀 Analizi Başlat"):
 
         p_analizi(df_el31, decrease_percentage_p, decrease_count_p)
 
-    # **T Analizleri Seçildiyse Çalıştır**
-    if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]):
-        def analyze_tesisat_data(df, threshold_ratio, below_threshold_limit):
-            for tesisat, group in df.groupby("Tesisat"):
-                suspicious_endeks_types = []
+# Eğer T Analizleri seçildiyse çalıştır
+if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]):
 
-                for endeks_turu in ["T1", "T2", "T3"]:
-                    if endeks_turu + " Analizi" not in selected_analysis:
-                        continue
+    # 📌 Yeni analyze_tesisat_data fonksiyonunu burada ekle
+    def analyze_tesisat_data(df, threshold_ratio, below_threshold_limit):
+        for tesisat, group in df.groupby("Tesisat"):
+            suspicious_endeks_types = []
 
-                    avg_value = group[group["Endeks Türü"] == endeks_turu]["Ortalama Tüketim"].mean()
-                    threshold_value = avg_value * (1 - threshold_ratio / 100)
+            for endeks_turu in ["T1", "T2", "T3"]:
+                if endeks_turu + " Analizi" not in selected_analysis:
+                    continue
 
-                    below_threshold_count = sum(
-                        1
-                        for val in pd.to_numeric(
-                            group[group["Endeks Türü"] == endeks_turu]["Ortalama Tüketim"]
-                            .astype(str)
-                            .str.replace(",", ".", regex=True), errors="coerce"
-                        ).dropna()
-                        if val > 0 and val < threshold_value
-                    )
+                # 📌 **Sadece ilgili endeks türünü filtrele**
+                filtered_group = group[group["Endeks Türü"] == endeks_turu]
 
-                    if below_threshold_count > below_threshold_limit:
-                        if tesisat in combined_results:
-                            combined_results[tesisat].append(endeks_turu)
-                        else:
-                            combined_results[tesisat] = [endeks_turu]
+                # 📌 **"Ortalama Tüketim" sütununu sayıya çevir (hatalı değerleri NaN yap)**
+                filtered_group["Ortalama Tüketim"] = pd.to_numeric(
+                    filtered_group["Ortalama Tüketim"].astype(str).str.replace(",", ".", regex=True),
+                    errors="coerce"
+                )
 
-        analyze_tesisat_data(df_zblir, decrease_percentage_t, decrease_count_t)
+                # 📌 **Eğer geçerli veri yoksa, bu endeksi atla**
+                if filtered_group["Ortalama Tüketim"].isna().all():
+                    continue
+
+                avg_value = filtered_group["Ortalama Tüketim"].mean()
+                threshold_value = avg_value * (1 - threshold_ratio / 100)
+
+                below_threshold_count = sum(
+                    1 for val in filtered_group["Ortalama Tüketim"].dropna()
+                    if val > 0 and val < threshold_value
+                )
+
+                if below_threshold_count > below_threshold_limit:
+                    if tesisat in combined_results:
+                        combined_results[tesisat].append(endeks_turu)
+                    else:
+                        combined_results[tesisat] = [endeks_turu]
+
+    # 📌 Yeni fonksiyon buraya eklendi, şimdi çağırabilirsin:
+    analyze_tesisat_data(df_zblir, decrease_percentage_t, decrease_count_t)
+
 
     # **Sonuçları DataFrame'e Dönüştür ve Session State'e Kaydet**
     if combined_results:
