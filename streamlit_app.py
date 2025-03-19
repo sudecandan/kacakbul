@@ -260,12 +260,14 @@ def admin_login():
     st.sidebar.subheader("🔐 Admin Girişi")
     
     # Kullanıcı adı ve şifre alanlarını session state'e bağla
-    st.session_state["admin_username"] = st.sidebar.text_input("Kullanıcı Adı", value=st.session_state["admin_username"])
-    st.session_state["admin_password"] = st.sidebar.text_input("Şifre", type="password", value=st.session_state["admin_password"])
+    username = st.sidebar.text_input("Kullanıcı Adı", value=st.session_state["admin_username"], key="admin_username_input")
+    password = st.sidebar.text_input("Şifre", type="password", value=st.session_state["admin_password"], key="admin_password_input")
 
     if st.sidebar.button("Giriş Yap"):
-        if st.session_state["admin_username"] == "admin" and st.session_state["admin_password"] == "password123":  
+        if username == "admin" and password == "password123":  
             st.session_state["admin_authenticated"] = True
+            st.session_state["admin_username"] = username
+            st.session_state["admin_password"] = password
             st.sidebar.success("✅ Başarıyla giriş yapıldı!")
         else:
             st.sidebar.error("🚫 Hatalı kullanıcı adı veya şifre!")
@@ -276,6 +278,7 @@ def admin_login():
             st.session_state["admin_authenticated"] = False
             st.session_state["admin_username"] = ""  # Kullanıcı adını temizle
             st.session_state["admin_password"] = ""  # Şifreyi temizle
+            st.session_state.clear()  # Tüm session'ı temizle
             st.sidebar.success("✅ Başarıyla çıkış yapıldı!")
             st.rerun()  # Sayfayı yenile
 
@@ -313,6 +316,7 @@ if st.session_state["admin_authenticated"]:
         st.sidebar.error("❌ Ağırlık katsayılarının toplamı **1 olmalıdır!**")
     else:
         st.sidebar.success("✅ Ağırlık katsayıları başarıyla girildi!")
+
 
 
 
