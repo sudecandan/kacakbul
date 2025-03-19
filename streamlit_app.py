@@ -241,48 +241,40 @@ FILE_PATHS = {
     "Son 4 Yıl Kaçak Tesisat Listesi": "theft_last_4_years.csv",
 }
 
-# 📌 **Ağırlıkların kaydedileceği dosya**
-WEIGHTS_FILE = "weights.csv"
-
-# 📌 **Admin tarafından yüklenen dosyaları saklamak için bir kayıt dosyası**
+# 📌 **Kaydedilen dosya yollarını ve ağırlıkları saklayan CSV dosyaları**
 UPLOADED_FILES_RECORD = "uploaded_files.csv"
-
-# 📌 **Varsayılan Ağırlık Değerleri**
-DEFAULT_WEIGHTS = {
-    "Sektör Puanı Ağırlığı": 0.30,
-    "Çarpan Puanı Ağırlığı": 0.20,
-    "Mahalle Puanı Ağırlığı": 0.30,
-    "Şube Kablo Puanı Ağırlığı": 0.20
-}
-
-# 📌 **Ağırlıkları Kaydetme Fonksiyonu**
-def save_weights(weights):
-    df = pd.DataFrame([weights])
-    df.to_csv(WEIGHTS_FILE, index=False)
-
-# 📌 **Ağırlıkları Yükleme Fonksiyonu**
-def load_weights():
-    if os.path.exists(WEIGHTS_FILE):
-        df = pd.read_csv(WEIGHTS_FILE)
-        return df.iloc[0].to_dict()
-    return DEFAULT_WEIGHTS
-
-# 📌 **Yüklenen dosyaları saklayan CSV dosyası**
-UPLOADED_FILES_RECORD = "uploaded_files.csv"
+WEIGHTS_RECORD = "weights.csv"
 
 # 📌 **Yüklenen dosyaları sistemde kaydetme fonksiyonu**
 def save_uploaded_files(files):
     df = pd.DataFrame(list(files.items()), columns=["Dosya Adı", "Dosya Yolu"])
     df.to_csv(UPLOADED_FILES_RECORD, index=False)
 
-# 📌 **Yüklenen dosyaları sistemden yükleme fonksiyonu**
+# 📌 **Sistemde kayıtlı yüklenen dosyaları geri yükleme fonksiyonu**
 def load_uploaded_files():
     if os.path.exists(UPLOADED_FILES_RECORD):
         df = pd.read_csv(UPLOADED_FILES_RECORD)
         return dict(zip(df["Dosya Adı"], df["Dosya Yolu"]))
     return {key: None for key in FILE_PATHS.keys()}
 
-# 📌 **Sistemde kayıtlı dosyaları kontrol et**
+# 📌 **Ağırlıkları sistemde kaydetme fonksiyonu**
+def save_weights(weights):
+    df = pd.DataFrame(weights.items(), columns=["Parametre", "Ağırlık"])
+    df.to_csv(WEIGHTS_RECORD, index=False)
+
+# 📌 **Sistemde kayıtlı ağırlıkları geri yükleme fonksiyonu**
+def load_weights():
+    if os.path.exists(WEIGHTS_RECORD):
+        df = pd.read_csv(WEIGHTS_RECORD)
+        return dict(zip(df["Parametre"], df["Ağırlık"]))
+    return {
+        "sektor": 0.30,
+        "carpan": 0.20,
+        "mahalle": 0.30,
+        "sube_kablo": 0.20
+    }
+
+# 📌 **Sistemde dosyalar varsa koru, yoksa oluştur**
 for file in FILE_PATHS.values():
     if not os.path.exists(file):
         pd.DataFrame(columns=["Değer"]).to_csv(file, index=False, sep=";")
@@ -292,29 +284,6 @@ if "admin_authenticated" not in st.session_state:
     st.session_state["admin_authenticated"] = False
 if "uploaded_files" not in st.session_state:
     st.session_state["uploaded_files"] = load_uploaded_files()
-
-# 📌 **Varsayılan Listeleri ve Ağırlık Dosyasını Oluştur**
-for file in FILE_PATHS.values():
-    if not os.path.exists(file):
-        pd.DataFrame(columns=["Değer"]).to_csv(file, index=False, sep=";")
-
-if not os.path.exists(WEIGHTS_FILE):
-    save_weights(DEFAULT_WEIGHTS)
-
-if not os.path.exists(UPLOADED_FILES_RECORD):
-    save_uploaded_files({key: None for key in FILE_PATHS.keys()})
-
-# 📌 **Session State İçin Gerekli Değerleri Tanımla**
-if "admin_authenticated" not in st.session_state:
-    st.session_state["admin_authenticated"] = False
-if "admin_username" not in st.session_state:
-    st.session_state["admin_username"] = ""
-if "admin_password" not in st.session_state:
-    st.session_state["admin_password"] = ""
-
-
-
-# 📌 **Ağırlıkları Session State'e Yükle**
 if "weights" not in st.session_state:
     st.session_state["weights"] = load_weights()
 
