@@ -397,7 +397,7 @@ if st.button("🚀 Analizi Başlat"):
 
 
 # 📌 Mevsimsel Dönem Analizi için başlık ve checkbox'ı aynı satıra yerleştirme
-col1, col2 = st.columns([0.1, 0.4])  # Checkbox ve başlık oranları
+col1, col2 = st.columns([0.05, 0.4])  # Checkbox ve başlık oranları
 
 with col1:
     seasonal_analysis_enabled = st.checkbox("")
