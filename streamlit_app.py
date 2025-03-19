@@ -401,7 +401,7 @@ col1 = st.columns(1)[0]  # Tek sütun oluştur
 with col1:
     seasonal_analysis_enabled = st.checkbox("", key="seasonal_analysis")  # Boş checkbox
     st.markdown(
-        '<label for="seasonal_analysis" style="font-size:20px; font-weight:bold; margin-left:5px;">📌 Mevsimsel Dönem Analizi</label>',
+        '<label for="seasonal_analysis" style="font-size:20px; font-weight:bold; margin-left:1px;">Mevsimsel Dönem Analizi</label>',
         unsafe_allow_html=True
     )
 
