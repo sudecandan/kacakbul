@@ -388,10 +388,6 @@ if st.button("🚀 Analizi Başlat"):
         # **İndeksi 1’den başlat**
         df_combined.index += 1  
 
-        # **Sonuçları Göster**
-        st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_combined)} şüpheli tesisat bulundu.**")
-        st.dataframe(df_combined)
-
 
         # 📌 **Analiz Sonuçlarını Session State'e Kaydet**
         st.session_state.analysis_results = df_combined 
