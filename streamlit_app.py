@@ -396,14 +396,10 @@ if st.button("🚀 Analizi Başlat"):
 
 
 
-# 📌 Mevsimsel Dönem Analizi için başlık ve checkbox'ı aynı satıra yerleştirme
-col1, col2 = st.columns([0.05, 0.35])  # Checkbox ve başlık oranları
+col1 = st.columns(1)[0]  # Tek bir sütun kullan
 
 with col1:
-    seasonal_analysis_enabled = st.checkbox("")
-
-with col2:
-    st.markdown("#### Mevsimsel Dönem Analizi")  # Başlık seviyesi küçültüldü
+    seasonal_analysis_enabled = st.checkbox("Mevsimsel Dönem Analizi", key="seasonal_analysis")
 
 if seasonal_analysis_enabled:
     decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
