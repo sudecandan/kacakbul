@@ -1,4 +1,4 @@
-import streamlit as st
+simport streamlit as st
 import pandas as pd
 import zipfile
 from io import BytesIO
@@ -395,14 +395,8 @@ if st.button("🚀 Analizi Başlat"):
 
 
 
-# 📌 Mevsimsel Dönem Analizi için başlık ve checkbox'ı bitişik hale getirme
-col1, col2 = st.columns([0.05, 0.95])  # Checkbox ve başlık için oranlar
 
-with col1:
-    seasonal_analysis_enabled = st.checkbox("", key="seasonal_analysis")  # Checkbox için boş metin
-
-with col2:
-    st.markdown("#### Mevsimsel Dönem Analizi", unsafe_allow_html=True)  # Başlık küçültüldü ve hizalandı
+seasonal_analysis_enabled = st.checkbox("Mevsimsel Dönem Analizi", key="seasonal_analysis")  # Checkbox için boş metin
 
 # Eğer checkbox aktifse, kullanıcıdan yüzde değeri isteyen alanı göster
 if seasonal_analysis_enabled:
