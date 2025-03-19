@@ -45,7 +45,7 @@ if el31_file and zblir_file and zdm240_file:
 
 
 # **EL31 VERİLERİNİ DÜZENLE BUTONU**
-if el31_file and st.button("📌 EL31 Verilerini Düzenle"):
+if el31_file:
 
     def clean_el31(df):
         drop_columns = [
@@ -105,7 +105,7 @@ if el31_file and st.button("📌 EL31 Verilerini Düzenle"):
 
 
 # **ZBLIR_002 VERİLERİNİ DÜZENLE BUTONU**
-if zblir_file and st.button("📌 ZBLIR_002 Verilerini Düzenle"):
+if zblir_file:
     def filter_latest_two_contacts(df):
         """Her tesisat için en güncel iki muhatabı seçer."""
         df["Son Okuma Tarihi"] = pd.to_datetime(df["Son Okuma Tarihi"], dayfirst=True)
