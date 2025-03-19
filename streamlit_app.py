@@ -427,14 +427,7 @@ if st.session_state.selected_tesisat is not None:
     ax.set_xlabel("Aylar")
     st.pyplot(fig)
 
-# 📌 **Mevsimsel Dönem Analizi İçin Checkbox**
-col1 = st.columns(1)[0]  # Tek sütun kullan
 
-with col1:
-    seasonal_analysis_enabled = st.checkbox("### **Mevsimsel Dönem Analizi**", key="seasonal_analysis")
-
-if seasonal_analysis_enabled:
-    decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
 
 
 
