@@ -314,8 +314,7 @@ if st.session_state["admin_authenticated"]:
     # 📌 Ağırlıkların toplamı 1 mi kontrol et
     if round(sektor_weight + carpan_weight + mahalle_weight + sube_kablo_weight, 2) != 1.00:
         st.sidebar.error("❌ Ağırlık katsayılarının toplamı **1 olmalıdır!**")
-    else:
-        st.sidebar.success("✅ Ağırlık katsayıları başarıyla girildi!")
+
 
 
 
