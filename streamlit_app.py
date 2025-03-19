@@ -249,20 +249,35 @@ for file in FILE_PATHS.values():
 # --- SESSION STATE (Admin Giriş için) ---
 if "admin_authenticated" not in st.session_state:
     st.session_state["admin_authenticated"] = False
+if "admin_username" not in st.session_state:
+    st.session_state["admin_username"] = ""
+if "admin_password" not in st.session_state:
+    st.session_state["admin_password"] = ""
 
 # --- ADMIN PANELI GIRIŞI ---
 def admin_login():
     """Admin giriş ekranı."""
     st.sidebar.subheader("🔐 Admin Girişi")
-    username = st.sidebar.text_input("Kullanıcı Adı")
-    password = st.sidebar.text_input("Şifre", type="password")
     
+    # Kullanıcı adı ve şifre alanlarını session state'e bağla
+    st.session_state["admin_username"] = st.sidebar.text_input("Kullanıcı Adı", value=st.session_state["admin_username"])
+    st.session_state["admin_password"] = st.sidebar.text_input("Şifre", type="password", value=st.session_state["admin_password"])
+
     if st.sidebar.button("Giriş Yap"):
-        if username == "admin" and password == "password123":  # Şifre değiştirilebilir
+        if st.session_state["admin_username"] == "admin" and st.session_state["admin_password"] == "password123":  
             st.session_state["admin_authenticated"] = True
             st.sidebar.success("✅ Başarıyla giriş yapıldı!")
         else:
             st.sidebar.error("🚫 Hatalı kullanıcı adı veya şifre!")
+
+    # 📌 **Admin Çıkış Butonu**
+    if st.session_state["admin_authenticated"]:
+        if st.sidebar.button("🚪 Çıkış Yap"):
+            st.session_state["admin_authenticated"] = False
+            st.session_state["admin_username"] = ""  # Kullanıcı adını temizle
+            st.session_state["admin_password"] = ""  # Şifreyi temizle
+            st.sidebar.success("✅ Başarıyla çıkış yapıldı!")
+            st.rerun()  # Sayfayı yenile
 
 admin_login()
 
@@ -284,10 +299,68 @@ if st.session_state["admin_authenticated"]:
             except Exception as e:
                 st.sidebar.error(f"⚠️ Hata: Dosya yüklenemedi! {str(e)}")
 
-    # Admin çıkış yapma butonu
-    if st.sidebar.button("🚪 Çıkış Yap"):
-        st.session_state["admin_authenticated"] = False
-        st.rerun()  # Admin çıkış yaptığında sayfa yenilenecek ve yükleme yerleri kapanacak
+# 📌 **Admin giriş yaptıysa ağırlıkları girebilir**
+if st.session_state["admin_authenticated"]:
+    st.sidebar.subheader("📊 **Ağırlık Katsayılarını Girin**")
+
+    sektor_weight = st.sidebar.number_input("Sektör Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.30)
+    carpan_weight = st.sidebar.number_input("Çarpan Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.20)
+    mahalle_weight = st.sidebar.number_input("Mahalle Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.30)
+    sube_kablo_weight = st.sidebar.number_input("Şube Kablo Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.20)
+
+    # 📌 Ağırlıkların toplamı 1 mi kontrol et
+    if round(sektor_weight + carpan_weight + mahalle_weight + sube_kablo_weight, 2) != 1.00:
+        st.sidebar.error("❌ Ağırlık katsayılarının toplamı **1 olmalıdır!**")
+    else:
+        st.sidebar.success("✅ Ağırlık katsayıları başarıyla girildi!")
+
+# 📌 **Tesisatları Öncelik Sırasına Göre Sırala Butonu**
+st.header("⚡ Tesisat Öncelik Sıralaması")
+if st.button("📊 **Tesisatları Sırala**"):
+    
+    # CSV Dosyalarını Oku
+    sektor_list = pd.read_csv('sector_list.csv', dtype=str, delimiter=';')
+    carpan_list = pd.read_csv('multiplier_list.csv', dtype=str, delimiter=';')
+    mahalle_list = pd.read_csv('neighborhood_list.csv', dtype=str, delimiter=';')
+    sube_kablo_list = pd.read_csv('cable_change_list.csv', dtype=str, delimiter=';')
+    supheli_sonuc = pd.read_csv('theft_last_4_years.csv', dtype=str, delimiter=';')
+
+    # Tesisatlara ait verileri eşleştirme
+    sektor_dict = dict(zip(sektor_list['Tesisat'], sektor_list['Nace Kodu']))
+    carpan_dict = dict(zip(carpan_list['Tesisat'], carpan_list['Tahakkuk faktörü']))
+    mahalle_dict = dict(zip(mahalle_list['Tesisat'], mahalle_list['Mahalle']))
+    sube_kablo_dict = dict(zip(sube_kablo_list['Tesisat'], sube_kablo_list['Kablo']))
+
+    # Sonuçları saklamak için liste
+    results = []
+
+    # Şüpheli tesisatların puanlarını hesaplama
+    for tesisat in supheli_sonuc['Tesisat']:
+        sektor_puan = float(sektor_dict.get(tesisat, "0").replace(',', '.')) if tesisat in sektor_dict else 0
+        carpan_puan = float(carpan_dict.get(tesisat, "0").replace(',', '.')) if tesisat in carpan_dict else 0
+        mahalle_puan = float(mahalle_dict.get(tesisat, "0").replace(',', '.')) if tesisat in mahalle_dict else 0
+        sube_kablo_puan = float(sube_kablo_dict.get(tesisat, "0").replace(',', '.')) if tesisat in sube_kablo_dict else 0
+
+        toplam_puan = (
+            (sektor_puan * sektor_weight) +
+            (carpan_puan * carpan_weight) +
+            (mahalle_puan * mahalle_weight) +
+            (sube_kablo_puan * sube_kablo_weight)
+        )
+        results.append([tesisat, toplam_puan])
+
+    # Sonuçları DataFrame olarak kaydet ve sırala
+    df_sorted = pd.DataFrame(results, columns=['Tesisat', 'Puan']).sort_values(by="Puan", ascending=False)
+    
+    st.success("✅ Tesisatlar başarıyla sıralandı!")
+    st.dataframe(df_sorted)
+
+    # 📌 **İndirme Butonu**
+    st.download_button("📥 Sıralanmış Tesisatları İndir", df_sorted.to_csv(sep=";", index=False).encode("utf-8"), "tesisatlar_sirali.csv", "text/csv")
+
+
+
+
 
 
 
