@@ -238,7 +238,6 @@ FILE_PATHS = {
     "Şube Kablo Değişme Puan Listesi": "cable_change_score_list.csv",
     "Çarpan Değişme Listesi": "multiplier_change_list.csv",
     "Çarpan Değişme Puan Listesi": "multiplier_change_score_list.csv",
-    "Son 4 Yıl Kaçak Tesisat Listesi": "theft_last_4_years.csv",
 }
 
 WEIGHTS_FILE = "weights.csv"
