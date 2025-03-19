@@ -421,7 +421,7 @@ if st.session_state.analysis_results is not None:
     st.success(f"✅ Analizler Tamamlandı! **Toplam {len(st.session_state.analysis_results)} şüpheli tesisat bulundu.**")
 
     # 📌 **Tabloyu AgGrid ile Göster**
-    df_combined = st.session_state.analysis_results  # Önceki analiz sonuçlarını kullan
+    df_combined = st.session_state.analysis_results
     gb = GridOptionsBuilder.from_dataframe(df_combined)
     gb.configure_selection(selection_mode="single", use_checkbox=True)  # Checkbox ile seçim ekle
     grid_options = gb.build()
@@ -435,16 +435,22 @@ if st.session_state.analysis_results is not None:
 
     # 📌 **Seçili Tesisatın Grafiğini Göster**
     if grid_response["selected_rows"]:
-        selected_tesisat = grid_response["selected_rows"][0]["Şüpheli Tesisat"]
-        st.subheader(f"📈 {selected_tesisat} Numaralı Tesisatın Grafiği")
+        selected_rows = grid_response["selected_rows"]
+        if selected_rows:  # 📌 **Hata almamak için önce kontrol et**
+            selected_tesisat = selected_rows[0]["Şüpheli Tesisat"]
+            st.subheader(f"📈 {selected_tesisat} Numaralı Tesisatın Grafiği")
 
-        # 📌 **Örnek Grafik Çizimi**
-        fig, ax = plt.subplots()
-        ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
-        ax.set_title(f"Tesisat {selected_tesisat} Tüketim Grafiği")
-        ax.set_ylabel("Tüketim (kWh)")
-        ax.set_xlabel("Aylar")
-        st.pyplot(fig)
+            # 📌 **Örnek Grafik Çizimi**
+            fig, ax = plt.subplots()
+            ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
+            ax.set_title(f"Tesisat {selected_tesisat} Tüketim Grafiği")
+            ax.set_ylabel("Tüketim (kWh)")
+            ax.set_xlabel("Aylar")
+            st.pyplot(fig)
+        else:
+            st.warning("Lütfen bir tesisat seçin.")
+
+
 
 
 
