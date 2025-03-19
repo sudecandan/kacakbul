@@ -588,25 +588,42 @@ if st.button("📊 **Tesisatları Sırala**"):
     mahalle_weight = st.session_state["weights"]["Mahalle Puanı Ağırlığı"]
     sube_kablo_weight = st.session_state["weights"]["Şube Kablo Puanı Ağırlığı"]
 
-
-    
-    
-
     # Tesisatlara ait verileri eşleştirme
     sektor_dict = dict(zip(sektor_list['Tesisat'], sektor_list['Nace Kodu']))
     carpan_dict = dict(zip(carpan_list['Tesisat'], carpan_list['Tahakkuk faktörü']))
-    mahalle_dict = dict(zip(mahalle_list['Tesisat'], mahalle_list['Mahalle']))
     sube_kablo_dict = dict(zip(sube_kablo_list['Tesisat'], sube_kablo_list['Kablo']))
 
+    # Mahalle bilgilerini içeren sözlükler oluşturuluyor
+    mahalle_tesisat_dict = {}
+    mahalle_puan_dict = {}
+
+    for df, mahalle_adi in zip(
+        [mahalle1_list, mahalle2_list, bogaz_list, karadeniz_list],
+        ["Marmara 1", "Marmara 2", "Boğaz", "Karadeniz"]
+    ):
+        for _, row in df.iterrows():
+            mahalle_tesisat_dict[row['Tesisat']] = row['Mahalle']
+
+    mahalle_puan_list = pd.read_csv(st.session_state["uploaded_files"]["Mahalle Puan Listesi"], dtype=str, delimiter=';')
+    mahalle_puan_dict = dict(zip(mahalle_puan_list['Mahalle'], mahalle_puan_list['Puan']))
+
+
+
+    
     # Sonuçları saklamak için liste
     results = []
 
-    # Şüpheli tesisatların puanlarını hesaplama
     for tesisat in supheli_sonuc['Tesisat']:
-        sektor_puan = float(sektor_dict.get(tesisat, "0").replace(',', '.')) if tesisat in sektor_dict else 0
-        carpan_puan = float(carpan_dict.get(tesisat, "0").replace(',', '.')) if tesisat in carpan_dict else 0
-        mahalle_puan = float(mahalle_dict.get(tesisat, "0").replace(',', '.')) if tesisat in mahalle_dict else 0
-        sube_kablo_puan = float(sube_kablo_dict.get(tesisat, "0").replace(',', '.')) if tesisat in sube_kablo_dict else 0
+        nace_kodu = sektor_dict.get(tesisat, None)
+        tahakkuk_faktoru = carpan_dict.get(tesisat, None)
+        kablo = sube_kablo_dict.get(tesisat, None)
+
+        mahalle_adi = mahalle_tesisat_dict.get(tesisat, None)
+        mahalle_puan = float(mahalle_puan_dict.get(mahalle_adi, "0").replace(',', '.')) if mahalle_adi else 0
+
+        sektor_puan = float(sektor_dict.get(nace_kodu, "0").replace(',', '.')) if nace_kodu else 0
+        carpan_puan = float(carpan_dict.get(tahakkuk_faktoru, "0").replace(',', '.')) if tahakkuk_faktoru else 0
+        sube_kablo_puan = float(sube_kablo_dict.get(kablo, "0").replace(',', '.')) if kablo else 0
 
         toplam_puan = (
             (sektor_puan * sektor_weight) +
@@ -614,6 +631,7 @@ if st.button("📊 **Tesisatları Sırala**"):
             (mahalle_puan * mahalle_weight) +
             (sube_kablo_puan * sube_kablo_weight)
         )
+
         results.append([tesisat, toplam_puan])
 
     # Sonuçları DataFrame olarak kaydet ve sırala
