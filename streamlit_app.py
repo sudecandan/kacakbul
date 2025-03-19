@@ -421,19 +421,18 @@ if st.session_state.analysis_results is not None:
 
 
 
-# 📌 **Analiz Sonuçlarını Tablo Olarak Göster**
+
+# 📌 **Analiz Sonuçlarını Göster**
 st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_combined)} şüpheli tesisat bulundu.**")
+st.dataframe(df_combined)
 
-# 📌 **Tabloyu oluştur + Butonları ekle**
-for index, row in df_combined.iterrows():
-    col1, col2 = st.columns([3, 1])  # İlk sütunda tesisat numarası, ikinci sütunda buton
-    with col1:
-        st.write(f"🔹 **{row['Şüpheli Tesisat']}** - {row['Şüpheli Analiz Türleri']}")
-    with col2:
-        if st.button(f"📊 Göster", key=row["Şüpheli Tesisat"]):
-            st.session_state.selected_tesisat = row["Şüpheli Tesisat"]
+# 📌 **Tesisat Seçimi için Radio Butonu**
+selected_tesisat = st.radio("📌 Bir tesisat seçin:", df_combined["Şüpheli Tesisat"])
 
-# 📌 **Seçili tesisatın grafiğini göster**
+# 📌 **Seçim Yapıldıysa Grafiği Göster**
+if selected_tesisat:
+    st.session_state.selected_tesisat = selected_tesisat  # Session State'e Kaydet
+
 if st.session_state.selected_tesisat:
     st.subheader(f"📈 {st.session_state.selected_tesisat} Numaralı Tesisatın Grafiği")
 
