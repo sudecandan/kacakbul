@@ -568,76 +568,81 @@ if seasonal_analysis_enabled:
 
 
 
+
+
+
+
+
 # 📌 **Tesisatları Öncelik Sırasına Göre Sırala Butonu**
 st.header("⚡ Tesisat Öncelik Sıralaması")
 
 if st.button("📊 **Tesisatları Sırala**"):
-    
-    # 📌 **Admin tarafından yüklenen en güncel dosyaları kullan**
-    sektor_list = pd.read_csv(st.session_state["uploaded_files"]["Sektör Listesi"], dtype=str, delimiter=';')
-    carpan_list = pd.read_csv(st.session_state["uploaded_files"]["Çarpan Listesi"], dtype=str, delimiter=';')
-    mahalle1_list = pd.read_csv(st.session_state["uploaded_files"]["Marmara Mahalle Listesi 1"], dtype=str, delimiter=';')
-    mahalle2_list = pd.read_csv(st.session_state["uploaded_files"]["Marmara Mahalle Listesi 2"], dtype=str, delimiter=';')
-    bogaz_list = pd.read_csv(st.session_state["uploaded_files"]["Boğaz Mahalle Listesi"], dtype=str, delimiter=';')
-    karadeniz_list = pd.read_csv(st.session_state["uploaded_files"]["Karadeniz Mahalle Listesi"], dtype=str, delimiter=';')
-    sube_kablo_list = pd.read_csv(st.session_state["uploaded_files"]["Şube Kablo Değişme Listesi"], dtype=str, delimiter=';')
 
-    # 📌 **Ağırlık Değerlerini Al**
-    sektor_weight = st.session_state["weights"]["Sektör Puanı Ağırlığı"]
-    carpan_weight = st.session_state["weights"]["Çarpan Puanı Ağırlığı"]
-    mahalle_weight = st.session_state["weights"]["Mahalle Puanı Ağırlığı"]
-    sube_kablo_weight = st.session_state["weights"]["Şube Kablo Puanı Ağırlığı"]
+    # **P ve T analizleri sonucunda bulunan şüpheli tesisatlar**
+    if st.session_state.analysis_results is None or st.session_state.analysis_results.empty:
+        st.warning("⚠️ Henüz analiz yapılmadı veya şüpheli tesisat bulunamadı!")
+    else:
+        supheli_tesisatlar = st.session_state.analysis_results["Şüpheli Tesisat"].tolist()
 
-    # 📌 **Tesisatlara ait verileri eşleştirme**
-    sektor_dict = dict(zip(sektor_list['Tesisat'], sektor_list['Nace Kodu']))
-    carpan_dict = dict(zip(carpan_list['Tesisat'], carpan_list['Tahakkuk faktörü']))
-    sube_kablo_dict = dict(zip(sube_kablo_list['Tesisat'], sube_kablo_list['Kablo']))
+        # 📌 **Gerekli CSV Dosyalarını Yükle**
+        sektor_list = pd.read_csv(st.session_state["uploaded_files"]["Sektör Listesi"], dtype=str, delimiter=';')
+        carpan_list = pd.read_csv(st.session_state["uploaded_files"]["Çarpan Listesi"], dtype=str, delimiter=';')
+        mahalle1_list = pd.read_csv(st.session_state["uploaded_files"]["Marmara Mahalle Listesi 1"], dtype=str, delimiter=';')
+        mahalle2_list = pd.read_csv(st.session_state["uploaded_files"]["Marmara Mahalle Listesi 2"], dtype=str, delimiter=';')
+        bogaz_list = pd.read_csv(st.session_state["uploaded_files"]["Boğaz Mahalle Listesi"], dtype=str, delimiter=';')
+        karadeniz_list = pd.read_csv(st.session_state["uploaded_files"]["Karadeniz Mahalle Listesi"], dtype=str, delimiter=';')
+        sube_kablo_list = pd.read_csv(st.session_state["uploaded_files"]["Şube Kablo Değişme Listesi"], dtype=str, delimiter=';')
+        mahalle_puan_list = pd.read_csv(st.session_state["uploaded_files"]["Mahalle Puan Listesi"], dtype=str, delimiter=';')
 
-    # 📌 **Mahalle bilgilerini içeren sözlükler oluşturuluyor**
-    mahalle_tesisat_dict = {}
-    mahalle_puan_dict = {}
+        # 📌 **Ağırlık Değerlerini Al**
+        sektor_weight = st.session_state["weights"]["Sektör Puanı Ağırlığı"]
+        carpan_weight = st.session_state["weights"]["Çarpan Puanı Ağırlığı"]
+        mahalle_weight = st.session_state["weights"]["Mahalle Puanı Ağırlığı"]
+        sube_kablo_weight = st.session_state["weights"]["Şube Kablo Puanı Ağırlığı"]
 
-    for df, mahalle_adi in zip(
-        [mahalle1_list, mahalle2_list, bogaz_list, karadeniz_list],
-        ["Marmara 1", "Marmara 2", "Boğaz", "Karadeniz"]
-    ):
-        for _, row in df.iterrows():
-            mahalle_tesisat_dict[row['Tesisat']] = row['Mahalle']
+        # 📌 **Verileri Sözlüklere Dönüştürme**
+        sektor_dict = dict(zip(sektor_list['Tesisat'], sektor_list['Nace Kodu']))
+        carpan_dict = dict(zip(carpan_list['Tesisat'], carpan_list['Tahakkuk faktörü']))
+        sube_kablo_dict = dict(zip(sube_kablo_list['Tesisat'], sube_kablo_list['Kablo']))
 
-    mahalle_puan_list = pd.read_csv(st.session_state["uploaded_files"]["Mahalle Puan Listesi"], dtype=str, delimiter=';')
-    mahalle_puan_dict = dict(zip(mahalle_puan_list['Mahalle'], mahalle_puan_list['Puan']))
+        # 📌 **Mahalle Eşleşmesi**
+        mahalle_tesisat_dict = {}
+        for df, mahalle_adi in zip([mahalle1_list, mahalle2_list, bogaz_list, karadeniz_list],
+                                   ["Marmara 1", "Marmara 2", "Boğaz", "Karadeniz"]):
+            for _, row in df.iterrows():
+                mahalle_tesisat_dict[row['Tesisat']] = row['Mahalle']
 
-    # 📌 **Sonuçları saklamak için liste**
-    results = []
+        # 📌 **Mahalle Puanları**
+        mahalle_puan_dict = dict(zip(mahalle_puan_list['Mahalle'], mahalle_puan_list['Puan']))
 
-    # Şüpheli tesisatlar yerine sistemde kayıtlı tüm tesisatları işleme alıyoruz
-    for tesisat in sektor_dict.keys():
-        nace_kodu = sektor_dict.get(tesisat, None)
-        tahakkuk_faktoru = carpan_dict.get(tesisat, None)
-        kablo = sube_kablo_dict.get(tesisat, None)
+        # 📌 **Şüpheli Tesisatları Puanlama**
+        results = []
+        for tesisat in supheli_tesisatlar:
+            nace_kodu = sektor_dict.get(tesisat, None)
+            tahakkuk_faktoru = carpan_dict.get(tesisat, None)
+            kablo = sube_kablo_dict.get(tesisat, None)
+            mahalle_adi = mahalle_tesisat_dict.get(tesisat, None)
 
-        mahalle_adi = mahalle_tesisat_dict.get(tesisat, None)
-        mahalle_puan = float(mahalle_puan_dict.get(mahalle_adi, "0").replace(',', '.')) if mahalle_adi else 0
+            mahalle_puan = float(mahalle_puan_dict.get(mahalle_adi, "0").replace(',', '.')) if mahalle_adi else 0
+            sektor_puan = float(sektor_dict.get(nace_kodu, "0").replace(',', '.')) if nace_kodu else 0
+            carpan_puan = float(carpan_dict.get(tahakkuk_faktoru, "0").replace(',', '.')) if tahakkuk_faktoru else 0
+            sube_kablo_puan = float(sube_kablo_dict.get(kablo, "0").replace(',', '.')) if kablo else 0
 
-        sektor_puan = float(sektor_dict.get(nace_kodu, "0").replace(',', '.')) if nace_kodu else 0
-        carpan_puan = float(carpan_dict.get(tahakkuk_faktoru, "0").replace(',', '.')) if tahakkuk_faktoru else 0
-        sube_kablo_puan = float(sube_kablo_dict.get(kablo, "0").replace(',', '.')) if kablo else 0
+            toplam_puan = (
+                (sektor_puan * sektor_weight) +
+                (carpan_puan * carpan_weight) +
+                (mahalle_puan * mahalle_weight) +
+                (sube_kablo_puan * sube_kablo_weight)
+            )
 
-        toplam_puan = (
-            (sektor_puan * sektor_weight) +
-            (carpan_puan * carpan_weight) +
-            (mahalle_puan * mahalle_weight) +
-            (sube_kablo_puan * sube_kablo_weight)
-        )
+            results.append([tesisat, toplam_puan])
 
-        results.append([tesisat, toplam_puan])
+        # 📌 **Sonuçları Sırala ve Göster**
+        df_sorted = pd.DataFrame(results, columns=['Tesisat', 'Puan']).sort_values(by="Puan", ascending=False)
+        
+        st.success(f"✅ Şüpheli tesisatlar başarıyla sıralandı! Toplam {len(df_sorted)} tesisat listelendi.")
+        st.dataframe(df_sorted)
 
-    # 📌 **Sonuçları DataFrame olarak kaydet ve sırala**
-    df_sorted = pd.DataFrame(results, columns=['Tesisat', 'Puan']).sort_values(by="Puan", ascending=False)
-    
-    st.success("✅ Tesisatlar başarıyla sıralandı!")
-    st.dataframe(df_sorted)
-
-    # 📌 **İndirme Butonu**
-    st.download_button("📥 Sıralanmış Tesisatları İndir", df_sorted.to_csv(sep=";", index=False).encode("utf-8"), "tesisatlar_sirali.csv", "text/csv")
-
+        # 📌 **İndirme Butonu**
+        st.download_button("📥 Sıralanmış Şüpheli Tesisatları İndir",
+                           df_sorted.to_csv(sep=";", index=False
