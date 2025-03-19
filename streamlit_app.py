@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 import zipfile
 from io import BytesIO
+import matplotlib.pyplot as plt
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+
+
 
 # STREAMLIT BAŞLIĞI
 st.title("⚡ KaçakBul")
