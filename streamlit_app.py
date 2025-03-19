@@ -184,9 +184,15 @@ with col2:
     decrease_percentage_t = st.number_input("T Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=50)
     decrease_count_t = st.number_input("T Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=5)
 
-with col3 :
-    st.markdown("#### 📉 **Mevsimsel Dönem Analizi**")
-    decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
+with col3:
+    st.markdown("### 📉 **Mevsimsel Dönem Analizi**")
+    
+    # Mevsimsel Dönem Analizi için checkbox
+    seasonal_analysis_enabled = st.checkbox("Mevsimsel Dönem Analizini Aktif Et")
+
+    if seasonal_analysis_enabled:
+        decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
+
 
 
 # **Seçili analizleri belirleme**
