@@ -416,36 +416,25 @@ if st.session_state.analysis_results is not None:
 
 
 
-# 📌 **AgGrid ile Tıklanabilir Tablo**
-gb = GridOptionsBuilder.from_dataframe(st.session_state.analysis_results)
-gb.configure_selection(selection_mode="single", use_checkbox=False)  # Satır seçilebilir hale geldi
-grid_options = gb.build()
+    # **AgGrid ile tıklanabilir tablo**
+    gb = GridOptionsBuilder.from_dataframe(df_combined)
+    gb.configure_selection("single", use_checkbox=True)  # Tek satır seçilebilir
+    grid_options = gb.build()
 
-grid_response = AgGrid(
-    st.session_state.analysis_results,
-    gridOptions=grid_options,
-    update_mode=GridUpdateMode.SELECTION_CHANGED,
-    enable_enterprise_modules=False,
-    height=300,
-    fit_columns_on_grid_load=True
-)
+    grid_response = AgGrid(df_combined, gridOptions=grid_options, update_mode=GridUpdateMode.SELECTION_CHANGED)
 
-# 📌 **Seçili Tesisatın Grafiğini Göster**
-if grid_response["selected_rows"]:
-    selected_row = grid_response["selected_rows"][0]
-    selected_tesisat = selected_row["Şüpheli Tesisat"]
+    # **Tıklanan tesisatı al ve grafiği göster**
+    if "selected_rows" in grid_response and grid_response["selected_rows"]:
+        selected_tesisat = grid_response["selected_rows"][0]["Şüpheli Tesisat"]
+        st.subheader(f"📊 {selected_tesisat} Numaralı Tesisatın Grafiği")
 
-    # 📌 **Tesisat Seçildiğinde Grafik Göster**
-    st.subheader(f"📈 {selected_tesisat} Numaralı Tesisatın Grafiği")
-
-    # 📌 **Örnek Grafik Çizimi**
-    fig, ax = plt.subplots()
-    ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
-    ax.set_title(f"Tesisat {selected_tesisat} Tüketim Grafiği")
-    ax.set_ylabel("Tüketim (kWh)")
-    ax.set_xlabel("Aylar")
-    st.pyplot(fig)
-
+        # Örnek grafik çizimi
+        fig, ax = plt.subplots()
+        ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
+        ax.set_title(f"Tesisat {selected_tesisat} Tüketim Grafiği")
+        ax.set_ylabel("Tüketim (kWh)")
+        ax.set_xlabel("Aylar")
+        st.pyplot(fig)
 
 
 
