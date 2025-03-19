@@ -372,33 +372,7 @@ if st.button("🚀 Analizi Başlat"):
 
         analyze_tesisat_data(df_zblir, decrease_percentage_t, decrease_count_t)
 
-    if combined_results:
-        df_combined = pd.DataFrame(list(combined_results.items()), columns=["Şüpheli Tesisat", "Şüpheli Analiz Türleri"])
-        df_combined["Şüpheli Analiz Türleri"] = df_combined["Şüpheli Analiz Türleri"].apply(lambda x: ", ".join(x))
-
-        # **İndeksi 1’den başlat**
-        df_combined.index += 1  
-
-        # **Sonuçları session_state'e kaydet**
-        st.session_state.analysis_results = df_combined
-
-
-# **Sonuçları her zaman göster**
-if st.session_state.analysis_results is not None:
-    df_combined = st.session_state.analysis_results
-
-    st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_combined)} şüpheli tesisat bulundu.**")
-    st.dataframe(df_combined)
-
-    st.download_button(
-        "📥 Analiz Sonuçlarını İndir",
-        df_combined.to_csv(sep=";", index=False).encode("utf-8"),
-        "analiz_sonuclari.csv",
-        "text/csv"
-    )
-
-    else:
-        st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
+ 
 
 
 
