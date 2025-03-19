@@ -645,4 +645,6 @@ if st.button("📊 **Tesisatları Sırala**"):
 
         # 📌 **İndirme Butonu**
         st.download_button("📥 Sıralanmış Şüpheli Tesisatları İndir",
-                           df_sorted.to_csv(sep=";", index=False
+                           df_sorted.to_csv(sep=";", index=False).encode("utf-8"),
+                           "supheli_tesisatlar_sirali.csv",
+                           "text/csv")
