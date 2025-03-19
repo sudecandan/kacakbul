@@ -379,17 +379,24 @@ if st.button("🚀 Analizi Başlat"):
         # **İndeksi 1’den başlat**
         df_combined.index += 1  
 
-        # **Sonuçları Göster**
-        st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_combined)} şüpheli tesisat bulundu.**")
-        st.dataframe(df_combined)
+        # **Sonuçları session_state'e kaydet**
+        st.session_state.analysis_results = df_combined
 
-        # **Tek bir CSV dosyası olarak indir**
-        st.download_button(
-            "📥 Analiz Sonuçlarını İndir",
-            df_combined.to_csv(sep=";", index=True).encode("utf-8"),  # index=True ile yeni indeksleri de ekliyoruz
-            "analiz_sonuclari.csv",
-            "text/csv"
-        )
+
+# **Sonuçları her zaman göster**
+if st.session_state.analysis_results is not None:
+    df_combined = st.session_state.analysis_results
+
+    st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_combined)} şüpheli tesisat bulundu.**")
+    st.dataframe(df_combined)
+
+    st.download_button(
+        "📥 Analiz Sonuçlarını İndir",
+        df_combined.to_csv(sep=";", index=False).encode("utf-8"),
+        "analiz_sonuclari.csv",
+        "text/csv"
+    )
+
     else:
         st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
 
