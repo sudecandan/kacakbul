@@ -232,12 +232,14 @@ FILE_PATHS = {
     "Sektör Puan Listesi": "sector_score_list.csv",
     "Çarpan Listesi": "multiplier_list.csv",
     "Çarpan Puan Listesi": "multiplier_score_list.csv",
-    "Mahalle Listesi": "neighborhood_list.csv",
+    "Boğaz Mahalle Listesi": "neighborhood_list.csv",
+    "Karadeniz Mahalle Listesi": "neighborhood_list.csv",
+    "Marmara Mahalle Listesi 1": "neighborhood_list.csv",
+    "Marmara Mahalle Listesi 2": "neighborhood_list.csv",
     "Mahalle Puan Listesi": "neighborhood_score_list.csv",
     "Şube Kablo Değişme Listesi": "cable_change_list.csv",
     "Şube Kablo Değişme Puan Listesi": "cable_change_score_list.csv",
-    "Çarpan Değişme Listesi": "multiplier_change_list.csv",
-    "Çarpan Değişme Puan Listesi": "multiplier_change_score_list.csv",
+
 }
 
 WEIGHTS_FILE = "weights.csv"
