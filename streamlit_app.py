@@ -267,17 +267,31 @@ def load_weights():
         return df.iloc[0].to_dict()
     return DEFAULT_WEIGHTS
 
-# 📌 **Yüklenen dosya kayıtlarını kaydetme fonksiyonu**
+# 📌 **Yüklenen dosyaları saklayan CSV dosyası**
+UPLOADED_FILES_RECORD = "uploaded_files.csv"
+
+# 📌 **Yüklenen dosyaları sistemde kaydetme fonksiyonu**
 def save_uploaded_files(files):
     df = pd.DataFrame(list(files.items()), columns=["Dosya Adı", "Dosya Yolu"])
     df.to_csv(UPLOADED_FILES_RECORD, index=False)
 
-# 📌 **Yüklenen dosyaları yükleme fonksiyonu**
+# 📌 **Yüklenen dosyaları sistemden yükleme fonksiyonu**
 def load_uploaded_files():
     if os.path.exists(UPLOADED_FILES_RECORD):
         df = pd.read_csv(UPLOADED_FILES_RECORD)
         return dict(zip(df["Dosya Adı"], df["Dosya Yolu"]))
     return {key: None for key in FILE_PATHS.keys()}
+
+# 📌 **Sistemde kayıtlı dosyaları kontrol et**
+for file in FILE_PATHS.values():
+    if not os.path.exists(file):
+        pd.DataFrame(columns=["Değer"]).to_csv(file, index=False, sep=";")
+
+# 📌 **Session State İçin Gerekli Değerleri Tanımla**
+if "admin_authenticated" not in st.session_state:
+    st.session_state["admin_authenticated"] = False
+if "uploaded_files" not in st.session_state:
+    st.session_state["uploaded_files"] = load_uploaded_files()
 
 # 📌 **Varsayılan Listeleri ve Ağırlık Dosyasını Oluştur**
 for file in FILE_PATHS.values():
@@ -298,9 +312,7 @@ if "admin_username" not in st.session_state:
 if "admin_password" not in st.session_state:
     st.session_state["admin_password"] = ""
 
-# 📌 **Yüklenen Dosyaları Session State'e Yükle**
-if "uploaded_files" not in st.session_state:
-    st.session_state["uploaded_files"] = load_uploaded_files()
+
 
 # 📌 **Ağırlıkları Session State'e Yükle**
 if "weights" not in st.session_state:
