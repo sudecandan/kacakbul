@@ -402,7 +402,7 @@ with col1:
     seasonal_analysis_enabled = st.checkbox("", key="seasonal_analysis")  # Checkbox için boş metin
 
 with col2:
-    st.markdown("#### 📉 Mevsimsel Dönem Analizi", unsafe_allow_html=True)  # Başlık küçültüldü ve hizalandı
+    st.markdown("####Mevsimsel Dönem Analizi", unsafe_allow_html=True)  # Başlık küçültüldü ve hizalandı
 
 # Eğer checkbox aktifse, kullanıcıdan yüzde değeri isteyen alanı göster
 if seasonal_analysis_enabled:
