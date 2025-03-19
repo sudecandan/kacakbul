@@ -212,29 +212,41 @@ selected_analysis = [key for key, value in st.session_state.selected_analysis.it
 
 
 
-import streamlit as st
-import pandas as pd
-import os
 
-# 📌 **Saklanacak dosya yolları**
-FILE_PATHS = {
-    "Sektör Listesi": "sector_list.csv",
-    "Sektör Puan Listesi": "sector_score_list.csv",
-    "Çarpan Listesi": "multiplier_list.csv",
-    "Çarpan Puan Listesi": "multiplier_score_list.csv",
-    "Mahalle Listesi": "neighborhood_list.csv",
-    "Mahalle Puan Listesi": "neighborhood_score_list.csv",
-    "Şube Kablo Değişme Listesi": "cable_change_list.csv",
-    "Şube Kablo Değişme Puan Listesi": "cable_change_score_list.csv",
-    "Çarpan Değişme Listesi": "multiplier_change_list.csv",
-    "Çarpan Değişme Puan Listesi": "multiplier_change_score_list.csv",
-    "Son 4 Yıl Kaçak Tesisat Listesi": "theft_last_4_years.csv",
-}
 
-# 📌 **Varsayılan Listeleri Oluştur (Eğer yoksa)**
-for file in FILE_PATHS.values():
-    if not os.path.exists(file):
-        pd.DataFrame(columns=["Değer"]).to_csv(file, index=False, sep=";")
+
+
+
+
+
+
+
+
+
+
+# 🟠 **Admin Paneli Açıldıysa Listeler Yönetilebilir**
+if st.session_state["admin_authenticated"]:
+    st.sidebar.subheader("📂 Listeleri Güncelle")
+
+    for list_name, file_path in FILE_PATHS.items():
+        uploaded_file = st.sidebar.file_uploader(f"📌 {list_name} Dosya Yükleyin", type=["csv"], key=list_name)
+        
+        if uploaded_file:
+            try:
+                # Dosya okuma hatalarını önlemek için güvenlik artırıldı
+                df = pd.read_csv(uploaded_file, encoding="utf-8", delimiter=";", low_memory=False)
+                
+                # Format korunsun diye delimiter ile kaydet
+                df.to_csv(file_path, index=False, sep=";")
+                st.sidebar.success(f"✅ {list_name} güncellendi!")
+            except Exception as e:
+                st.sidebar.error(f"⚠️ Hata: Dosya yüklenemedi! {str(e)}")
+
+    # Admin çıkış yapma butonu
+    if st.sidebar.button("🚪 Çıkış Yap"):
+        st.session_state["admin_authenticated"] = False
+        st.rerun()  # Admin çıkış yaptığında sayfa yenilenecek ve yükleme yerleri kapanacak
+
 
 
 
@@ -286,12 +298,20 @@ if st.session_state["admin_authenticated"]:
 
     # 📌 Güncellenecek dosyalar
     FILE_PATHS = {
-        "Sektör Listesi": "sektor_list.csv",
-        "Çarpan Listesi": "carpan_list.csv",
-        "Mahalle Listesi": "mahalle_list.csv",
-        "Şube Kablo Listesi": "sube_kablo_list.csv"
+    "Sektör Listesi": "sector_list.csv",
+    "Sektör Puan Listesi": "sector_score_list.csv",
+    "Çarpan Listesi": "multiplier_list.csv",
+    "Çarpan Puan Listesi": "multiplier_score_list.csv",
+    "Mahalle Listesi": "neighborhood_list.csv",
+    "Mahalle Puan Listesi": "neighborhood_score_list.csv",
+    "Şube Kablo Değişme Listesi": "cable_change_list.csv",
+    "Şube Kablo Değişme Puan Listesi": "cable_change_score_list.csv",
+    "Çarpan Değişme Listesi": "multiplier_change_list.csv",
+    "Çarpan Değişme Puan Listesi": "multiplier_change_score_list.csv",
+    "Son 4 Yıl Kaçak Tesisat Listesi": "theft_last_4_years.csv",
     }
 
+    
     for list_name, file_path in FILE_PATHS.items():
         uploaded_file = st.sidebar.file_uploader(f"📌 {list_name} Dosya Yükleyin", type=["csv"], key=list_name)
         
@@ -452,6 +472,21 @@ if st.button("🚀 Analizi Başlat"):
 if st.session_state.analysis_results is not None:
     st.success(f"✅ Analizler Tamamlandı! **Toplam {len(st.session_state.analysis_results)} şüpheli tesisat bulundu.**")
     st.dataframe(st.session_state.analysis_results)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
