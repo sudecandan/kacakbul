@@ -395,13 +395,22 @@ if st.button("🚀 Analizi Başlat"):
 
 
 
-st.markdown("### 📉 **Mevsimsel Dönem Analizi**")
+# **Mevsimsel Dönem Analizi Kısmı (P ve T Analizi Tamamlandıktan Sonra Açılacak)**
+if st.session_state.get("analiz_sonuclari_var", False):
+    st.markdown("---")  # Ayırıcı çizgi
     
-# Mevsimsel Dönem Analizi için checkbox
-seasonal_analysis_enabled = st.checkbox("Aktif")
+    # 📌 Mevsimsel Dönem Analizi için başlık ve checkbox'ı aynı satıra yerleştirme
+    col1, col2 = st.columns([0.1, 0.9])  # Checkbox ve başlık oranları
 
-if seasonal_analysis_enabled:
-    decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
+    with col1:
+        seasonal_analysis_enabled = st.checkbox("")
+
+    with col2:
+        st.markdown("## 📉 Mevsimsel Dönem Analizi")
+
+    if seasonal_analysis_enabled:
+        decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
+
 
 
 
