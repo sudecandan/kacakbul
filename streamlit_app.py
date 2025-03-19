@@ -402,7 +402,11 @@ with col1:
     seasonal_analysis_enabled = st.checkbox("")
 
 with col2:
-    st.markdown("#### 📉 Mevsimsel Dönem Analizi")  # Başlık seviyesi küçültüldü
+    st.markdown(
+        '<p style="font-size:18px; font-weight:bold;">📉 Mevsimsel Dönem Analizi</p>',
+        unsafe_allow_html=True
+    )
+
 
 if seasonal_analysis_enabled:
     decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
