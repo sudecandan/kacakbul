@@ -413,23 +413,6 @@ if st.session_state.analysis_results is not None:
     st.success(f"✅ Analizler Tamamlandı! **Toplam {len(st.session_state.analysis_results)} şüpheli tesisat bulundu.**")
     st.dataframe(st.session_state.analysis_results)
 
-    # 📌 **Şüpheli Tesisatlara Tıklanabilir Butonlar Ekle**
-    for index, row in st.session_state.analysis_results.iterrows():
-        if st.button(f"📊 {row['Şüpheli Tesisat']} Grafiğini Göster", key=row["Şüpheli Tesisat"]):
-            st.session_state.selected_tesisat = row["Şüpheli Tesisat"]
-
-# 📌 **Seçili tesisatın grafiğini göster**
-if st.session_state.selected_tesisat is not None:
-    tesisat_no = st.session_state.selected_tesisat
-    st.subheader(f"📈 {tesisat_no} Numaralı Tesisatın Grafiği")
-
-    # 📌 **Örnek Grafik Çizimi**
-    fig, ax = plt.subplots()
-    ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
-    ax.set_title(f"Tesisat {tesisat_no} Tüketim Grafiği")
-    ax.set_ylabel("Tüketim (kWh)")
-    ax.set_xlabel("Aylar")
-    st.pyplot(fig)
 
 
 
