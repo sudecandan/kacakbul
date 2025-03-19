@@ -558,3 +558,10 @@ if st.button("📊 **Tesisatları Sırala**"):
 
     # 📌 **İndirme Butonu**
     st.download_button("📥 Sıralanmış Tesisatları İndir", df_sorted.to_csv(sep=";", index=False).encode("utf-8"), "tesisatlar_sirali.csv", "text/csv")
+
+
+
+
+
+
+pip install pyinstaller
