@@ -169,8 +169,7 @@ with col1:
 
     st.button("Tümünü Seç", on_click=toggle_all)
 
-# 🔵 **Düşüş Parametreleri**
-st.markdown("### 📉 Düşüş Parametreleri")
+
 
 col1, col2 = st.columns(2)
 
