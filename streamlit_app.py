@@ -399,10 +399,7 @@ if st.button("🚀 Analizi Başlat"):
 col1 = st.columns(1)[0]  # Tek sütun kullan
 
 with col1:
-    seasonal_analysis_enabled = st.checkbox("  ", key="seasonal_analysis")  # Checkbox boş bırakıldı
-    st.markdown("### **Mevsimsel Dönem Analizi**")  # Yazı büyütüldü ve bold yapıldı
-
-
+    seasonal_analysis_enabled = st.checkbox("**:large_blue_diamond: Mevsimsel Dönem Analizi**", key="seasonal_analysis")
 
 if seasonal_analysis_enabled:
     decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
