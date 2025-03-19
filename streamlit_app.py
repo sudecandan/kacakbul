@@ -286,16 +286,9 @@ if st.session_state["admin_authenticated"]:
 
 
 
-
-
-
-
-# 📌 **Analiz Sonuçlarını Sabit Tutmak için Session State Kullanımı**
-if "analysis_results" not in st.session_state:
-    st.session_state.analysis_results = None
-
-# 📌 **Analizi Başlat Butonu**
+# **Analizi Başlat Butonu**
 if st.button("🚀 Analizi Başlat"):
+
     combined_results = {}
 
     # **P Analizi Seçildiyse Çalıştır**
@@ -325,94 +318,80 @@ if st.button("🚀 Analizi Başlat"):
 
         p_analizi(df_el31, decrease_percentage_p, decrease_count_p)
 
-# Eğer T Analizleri seçildiyse çalıştır
-if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]):
+    # **T Analizleri Seçildiyse Çalıştır**
+    if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]):
 
-    # 📌 Yeni analyze_tesisat_data fonksiyonunu burada ekle
-    def analyze_tesisat_data(df, threshold_ratio, below_threshold_limit):
-        for tesisat, group in df.groupby("Tesisat"):
-            suspicious_endeks_types = []
+        def calc_avg(df, endeks_turu, threshold_ratio):
+            filtered_df = df[df["Endeks Türü"] == endeks_turu].copy()
+            if filtered_df.empty:
+                return None
 
-            for endeks_turu in ["T1", "T2", "T3"]:
-                if endeks_turu + " Analizi" not in selected_analysis:
-                    continue
+            filtered_df["Ortalama Tüketim"] = pd.to_numeric(
+                filtered_df["Ortalama Tüketim"].astype(str).str.replace(",", ".", regex=True), errors="coerce"
+            )
+            nonzero_values = filtered_df["Ortalama Tüketim"].dropna()
+            nonzero_values = nonzero_values[nonzero_values > 0].tolist()
 
-                # 📌 **Sadece ilgili endeks türünü filtrele**
-                filtered_group = group[group["Endeks Türü"] == endeks_turu]
+            if not nonzero_values:
+                return None
 
-                # 📌 **"Ortalama Tüketim" sütununu sayıya çevir (hatalı değerleri NaN yap)**
-                filtered_group["Ortalama Tüketim"] = pd.to_numeric(
-                    filtered_group["Ortalama Tüketim"].astype(str).str.replace(",", ".", regex=True),
-                    errors="coerce"
-                )
+            avg_value = sum(nonzero_values) / len(nonzero_values)
+            threshold_value = avg_value * (1 - threshold_ratio / 100)
 
-                # 📌 **Eğer geçerli veri yoksa, bu endeksi atla**
-                if filtered_group["Ortalama Tüketim"].isna().all():
-                    continue
+            return avg_value, threshold_value
 
-                avg_value = filtered_group["Ortalama Tüketim"].mean()
-                threshold_value = avg_value * (1 - threshold_ratio / 100)
+        def analyze_tesisat_data(df, threshold_ratio, below_threshold_limit):
+            for tesisat, group in df.groupby("Tesisat"):
+                suspicious_endeks_types = []
 
-                below_threshold_count = sum(
-                    1 for val in filtered_group["Ortalama Tüketim"].dropna()
-                    if val > 0 and val < threshold_value
-                )
+                for endeks_turu in ["T1", "T2", "T3"]:
+                    if endeks_turu + " Analizi" not in selected_analysis:
+                        continue
 
-                if below_threshold_count > below_threshold_limit:
-                    if tesisat in combined_results:
-                        combined_results[tesisat].append(endeks_turu)
-                    else:
-                        combined_results[tesisat] = [endeks_turu]
+                    result = calc_avg(group, endeks_turu, threshold_ratio)
+                    if result is None:
+                        continue
 
-    # 📌 Yeni fonksiyon buraya eklendi, şimdi çağırabilirsin:
-    analyze_tesisat_data(df_zblir, decrease_percentage_t, decrease_count_t)
+                    avg_value, threshold_value = result
 
+                    below_threshold_count = sum(
+                        1
+                        for val in pd.to_numeric(
+                            group[group["Endeks Türü"] == endeks_turu]["Ortalama Tüketim"]
+                            .astype(str)
+                            .str.replace(",", ".", regex=True), errors="coerce"
+                        ).dropna()
+                        if val > 0 and val < threshold_value
+                    )
 
-    # **Sonuçları DataFrame'e Dönüştür ve Session State'e Kaydet**
+                    if below_threshold_count > below_threshold_limit:
+                        if tesisat in combined_results:
+                            combined_results[tesisat].append(endeks_turu)
+                        else:
+                            combined_results[tesisat] = [endeks_turu]
+
+        analyze_tesisat_data(df_zblir, decrease_percentage_t, decrease_count_t)
+
     if combined_results:
         df_combined = pd.DataFrame(list(combined_results.items()), columns=["Şüpheli Tesisat", "Şüpheli Analiz Türleri"])
         df_combined["Şüpheli Analiz Türleri"] = df_combined["Şüpheli Analiz Türleri"].apply(lambda x: ", ".join(x))
-        df_combined.index += 1  # 1'den başlasın
 
-        st.session_state.analysis_results = df_combined  # **Session State'e Kaydet**
+        # **İndeksi 1’den başlat**
+        df_combined.index += 1  
+
+        # **Sonuçları Göster**
+        st.success(f"✅ Analizler Tamamlandı! **Toplam {len(df_combined)} şüpheli tesisat bulundu.**")
+        st.dataframe(df_combined)
+
+        # **Tek bir CSV dosyası olarak indir**
+        st.download_button(
+            "📥 Analiz Sonuçlarını İndir",
+            df_combined.to_csv(sep=";", index=True).encode("utf-8"),  # index=True ile yeni indeksleri de ekliyoruz
+            "analiz_sonuclari.csv",
+            "text/csv"
+        )
     else:
-        st.session_state.analysis_results = None  # Eğer sonuç yoksa sıfırla
-
-
-
-
-# 📌 **Eğer analiz sonuçları varsa, ekranda sürekli göster**
-if st.session_state.analysis_results is not None:
-    st.success(f"✅ Analizler Tamamlandı! **Toplam {len(st.session_state.analysis_results)} şüpheli tesisat bulundu.**")
-    st.dataframe(st.session_state.analysis_results)
-
-    # 📌 **Tıklanabilir Tesisat Numaraları**
-    for index, row in st.session_state.analysis_results.iterrows():
-        if st.button(f"📊 {row['Şüpheli Tesisat']} Grafiğini Göster", key=row["Şüpheli Tesisat"]):
-            st.session_state.selected_tesisat = row["Şüpheli Tesisat"]
-
-    # 📌 **Seçili tesisatın grafiğini göster**
-    if "selected_tesisat" in st.session_state:
-        tesisat_no = st.session_state.selected_tesisat
-        st.subheader(f"📈 {tesisat_no} Numaralı Tesisatın Grafiği")
-
-        # 📌 **Örnek Grafik**
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots()
-        ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
-        ax.set_title(f"Tesisat {tesisat_no} Tüketim Grafiği")
-        ax.set_ylabel("Tüketim (kWh)")
-        ax.set_xlabel("Aylar")
-        st.pyplot(fig)
-
-
-
-
-
-
-
-
-
+        st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
 
 
 
@@ -424,5 +403,3 @@ with col1:
 
 if seasonal_analysis_enabled:
     decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
-
-
