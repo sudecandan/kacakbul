@@ -346,7 +346,7 @@ if st.session_state["admin_authenticated"]:
     sube_kablo_weight = st.sidebar.number_input("Şube Kablo Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=st.session_state["weights"]["Şube Kablo Puanı Ağırlığı"])
 
     # 📌 **Ağırlıkları Kaydet Butonu**
-    if st.sidebar.button("✅ Ağırlıkları Kaydet"):
+    if st.sidebar.button("✅ Değişiklikleri Kaydet"):
         new_weights = {
             "Sektör Puanı Ağırlığı": sektor_weight,
             "Çarpan Puanı Ağırlığı": carpan_weight,
