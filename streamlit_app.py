@@ -99,7 +99,7 @@ if el31_file:
     zip_buffer.seek(0)
 
     
-    st.download_button("📥 Düzenlenmiş EL31 Dosyalarını ZIP Olarak İndir", zip_buffer, "el31_duzenlenmis.zip", "application/zip")
+    
 
 
 
@@ -139,8 +139,6 @@ if zblir_file:
 
     zip_buffer.seek(0)
 
-
-    st.download_button("📥 Düzenlenmiş ZBLIR_002 Dosyalarını ZIP Olarak İndir", zip_buffer, "zblir_duzenlenmis.zip", "application/zip")
 
 
 
