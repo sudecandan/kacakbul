@@ -570,30 +570,30 @@ if seasonal_analysis_enabled:
 
 # 📌 **Tesisatları Öncelik Sırasına Göre Sırala Butonu**
 st.header("⚡ Tesisat Öncelik Sıralaması")
+
 if st.button("📊 **Tesisatları Sırala**"):
     
-    # CSV Dosyalarını Oku
-    sektor_list = pd.read_csv('sector_list.csv', dtype=str, delimiter=';')
-    carpan_list = pd.read_csv('multiplier_list.csv', dtype=str, delimiter=';')
-    mahalle1_list = pd.read_csv('marmara1_neighborhood_list.csv',dtype=str, delimiter=';')
-    mahalle2_list = pd.read_csv('marmara2_neighborhood_list.csv', dtype=str, delimiter=';')
-    bogaz_list = pd.read_csv('bogaz_neighborhood_list.csv', dtype=str, delimiter=';')
-    karadeniz_list = pd.read_csv('karadeniz_neighborhood_list.csv', dtype=str, delimiter=';')
-    sube_kablo_list = pd.read_csv(cable_change_list.csv, dtype=str, delimiter=';')
+    # 📌 **Admin tarafından yüklenen en güncel dosyaları kullan**
+    sektor_list = pd.read_csv(st.session_state["uploaded_files"]["Sektör Listesi"], dtype=str, delimiter=';')
+    carpan_list = pd.read_csv(st.session_state["uploaded_files"]["Çarpan Listesi"], dtype=str, delimiter=';')
+    mahalle1_list = pd.read_csv(st.session_state["uploaded_files"]["Marmara Mahalle Listesi 1"], dtype=str, delimiter=';')
+    mahalle2_list = pd.read_csv(st.session_state["uploaded_files"]["Marmara Mahalle Listesi 2"], dtype=str, delimiter=';')
+    bogaz_list = pd.read_csv(st.session_state["uploaded_files"]["Boğaz Mahalle Listesi"], dtype=str, delimiter=';')
+    karadeniz_list = pd.read_csv(st.session_state["uploaded_files"]["Karadeniz Mahalle Listesi"], dtype=str, delimiter=';')
+    sube_kablo_list = pd.read_csv(st.session_state["uploaded_files"]["Şube Kablo Değişme Listesi"], dtype=str, delimiter=';')
 
-
-    # Ağırlık Değerlerini Al
+    # 📌 **Ağırlık Değerlerini Al**
     sektor_weight = st.session_state["weights"]["Sektör Puanı Ağırlığı"]
     carpan_weight = st.session_state["weights"]["Çarpan Puanı Ağırlığı"]
     mahalle_weight = st.session_state["weights"]["Mahalle Puanı Ağırlığı"]
     sube_kablo_weight = st.session_state["weights"]["Şube Kablo Puanı Ağırlığı"]
 
-    # Tesisatlara ait verileri eşleştirme
+    # 📌 **Tesisatlara ait verileri eşleştirme**
     sektor_dict = dict(zip(sektor_list['Tesisat'], sektor_list['Nace Kodu']))
     carpan_dict = dict(zip(carpan_list['Tesisat'], carpan_list['Tahakkuk faktörü']))
     sube_kablo_dict = dict(zip(sube_kablo_list['Tesisat'], sube_kablo_list['Kablo']))
 
-    # Mahalle bilgilerini içeren sözlükler oluşturuluyor
+    # 📌 **Mahalle bilgilerini içeren sözlükler oluşturuluyor**
     mahalle_tesisat_dict = {}
     mahalle_puan_dict = {}
 
@@ -607,13 +607,11 @@ if st.button("📊 **Tesisatları Sırala**"):
     mahalle_puan_list = pd.read_csv(st.session_state["uploaded_files"]["Mahalle Puan Listesi"], dtype=str, delimiter=';')
     mahalle_puan_dict = dict(zip(mahalle_puan_list['Mahalle'], mahalle_puan_list['Puan']))
 
-
-
-    
-    # Sonuçları saklamak için liste
+    # 📌 **Sonuçları saklamak için liste**
     results = []
 
-    for tesisat in supheli_sonuc['Tesisat']:
+    # Şüpheli tesisatlar yerine sistemde kayıtlı tüm tesisatları işleme alıyoruz
+    for tesisat in sektor_dict.keys():
         nace_kodu = sektor_dict.get(tesisat, None)
         tahakkuk_faktoru = carpan_dict.get(tesisat, None)
         kablo = sube_kablo_dict.get(tesisat, None)
@@ -634,7 +632,7 @@ if st.button("📊 **Tesisatları Sırala**"):
 
         results.append([tesisat, toplam_puan])
 
-    # Sonuçları DataFrame olarak kaydet ve sırala
+    # 📌 **Sonuçları DataFrame olarak kaydet ve sırala**
     df_sorted = pd.DataFrame(results, columns=['Tesisat', 'Puan']).sort_values(by="Puan", ascending=False)
     
     st.success("✅ Tesisatlar başarıyla sıralandı!")
@@ -642,10 +640,4 @@ if st.button("📊 **Tesisatları Sırala**"):
 
     # 📌 **İndirme Butonu**
     st.download_button("📥 Sıralanmış Tesisatları İndir", df_sorted.to_csv(sep=";", index=False).encode("utf-8"), "tesisatlar_sirali.csv", "text/csv")
-
-
-
-
-
-
 
