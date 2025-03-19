@@ -177,12 +177,12 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown("#### 📉 **P Analizi**")
     decrease_percentage_p = st.number_input("P Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
-    decrease_count_p = st.number_input("🔄 P Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=3)
+    decrease_count_p = st.number_input("P Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=3)
 
 with col2:
     st.markdown("#### 📉 **T Analizi**")
     decrease_percentage_t = st.number_input("T Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=50)
-    decrease_count_t = st.number_input("🔄 T Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=5)
+    decrease_count_t = st.number_input("T Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=5)
 
 with col3 :
     st.markdown("#### 📉 **Q Analizi**")
