@@ -416,6 +416,11 @@ if st.session_state.analysis_results is not None:
 
 
 
+
+
+
+
+
 # 📌 **Analiz Sonuçlarını Göster**
 if st.session_state.analysis_results is not None:
     st.success(f"✅ Analizler Tamamlandı! **Toplam {len(st.session_state.analysis_results)} şüpheli tesisat bulundu.**")
@@ -434,21 +439,25 @@ if st.session_state.analysis_results is not None:
     )
 
     # 📌 **Seçili Tesisatın Grafiğini Göster**
-    if grid_response["selected_rows"]:
+    if grid_response["selected_rows"]:  
         selected_rows = grid_response["selected_rows"]
-        if selected_rows:  # 📌 **Hata almamak için önce kontrol et**
+        if selected_rows:
             selected_tesisat = selected_rows[0]["Şüpheli Tesisat"]
-            st.subheader(f"📈 {selected_tesisat} Numaralı Tesisatın Grafiği")
-
-            # 📌 **Örnek Grafik Çizimi**
-            fig, ax = plt.subplots()
-            ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
-            ax.set_title(f"Tesisat {selected_tesisat} Tüketim Grafiği")
-            ax.set_ylabel("Tüketim (kWh)")
-            ax.set_xlabel("Aylar")
-            st.pyplot(fig)
+            st.session_state.selected_tesisat = selected_tesisat  # Seçili tesisatı kaydet
         else:
-            st.warning("Lütfen bir tesisat seçin.")
+            st.session_state.selected_tesisat = None  # Seçim kaldırıldığında sıfırla
+
+# 📌 **Eğer bir tesisat seçildiyse grafiği göster**
+if st.session_state.selected_tesisat:
+    st.subheader(f"📈 {st.session_state.selected_tesisat} Numaralı Tesisatın Grafiği")
+
+    # 📌 **Örnek Grafik Çizimi**
+    fig, ax = plt.subplots()
+    ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
+    ax.set_title(f"Tesisat {st.session_state.selected_tesisat} Tüketim Grafiği")
+    ax.set_ylabel("Tüketim (kWh)")
+    ax.set_xlabel("Aylar")
+    st.pyplot(fig)
 
 
 
