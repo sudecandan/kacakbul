@@ -416,25 +416,39 @@ if st.session_state.analysis_results is not None:
 
 
 
-    # **AgGrid ile tıklanabilir tablo**
+# 📌 **Analiz Sonuçlarını Göster**
+if st.session_state.analysis_results is not None:
+    st.success(f"✅ Analizler Tamamlandı! **Toplam {len(st.session_state.analysis_results)} şüpheli tesisat bulundu.**")
+
+    # 📌 **Tabloyu AgGrid ile Göster**
+    df_combined = st.session_state.analysis_results  # Önceki analiz sonuçlarını kullan
     gb = GridOptionsBuilder.from_dataframe(df_combined)
-    gb.configure_selection("single", use_checkbox=True)  # Tek satır seçilebilir
+    gb.configure_selection(selection_mode="single", use_checkbox=True)  # Checkbox ile seçim ekle
     grid_options = gb.build()
 
-    grid_response = AgGrid(df_combined, gridOptions=grid_options, update_mode=GridUpdateMode.SELECTION_CHANGED)
+    grid_response = AgGrid(
+        df_combined,
+        gridOptions=grid_options,
+        update_mode=GridUpdateMode.SELECTION_CHANGED,
+        enable_enterprise_modules=False
+    )
 
-    # **Tıklanan tesisatı al ve grafiği göster**
-    if "selected_rows" in grid_response and grid_response["selected_rows"]:
+    # 📌 **Seçili Tesisatın Grafiğini Göster**
+    if grid_response["selected_rows"]:
         selected_tesisat = grid_response["selected_rows"][0]["Şüpheli Tesisat"]
-        st.subheader(f"📊 {selected_tesisat} Numaralı Tesisatın Grafiği")
+        st.subheader(f"📈 {selected_tesisat} Numaralı Tesisatın Grafiği")
 
-        # Örnek grafik çizimi
+        # 📌 **Örnek Grafik Çizimi**
         fig, ax = plt.subplots()
         ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
         ax.set_title(f"Tesisat {selected_tesisat} Tüketim Grafiği")
         ax.set_ylabel("Tüketim (kWh)")
         ax.set_xlabel("Aylar")
         st.pyplot(fig)
+
+
+
+
 
 
 
