@@ -241,45 +241,33 @@ FILE_PATHS = {
     "Son 4 Yıl Kaçak Tesisat Listesi": "theft_last_4_years.csv",
 }
 
-# 📌 **Kaydedilen dosya yollarını ve ağırlıkları saklayan CSV dosyaları**
 UPLOADED_FILES_RECORD = "uploaded_files.csv"
 WEIGHTS_RECORD = "weights.csv"
 
-# 📌 **Yüklenen dosyaları sistemde kaydetme fonksiyonu**
 def save_uploaded_files(files):
     df = pd.DataFrame(list(files.items()), columns=["Dosya Adı", "Dosya Yolu"])
     df.to_csv(UPLOADED_FILES_RECORD, index=False)
 
-# 📌 **Sistemde kayıtlı yüklenen dosyaları geri yükleme fonksiyonu**
 def load_uploaded_files():
     if os.path.exists(UPLOADED_FILES_RECORD):
         df = pd.read_csv(UPLOADED_FILES_RECORD)
         return dict(zip(df["Dosya Adı"], df["Dosya Yolu"]))
     return {key: None for key in FILE_PATHS.keys()}
 
-# 📌 **Ağırlıkları sistemde kaydetme fonksiyonu**
 def save_weights(weights):
     df = pd.DataFrame(weights.items(), columns=["Parametre", "Ağırlık"])
     df.to_csv(WEIGHTS_RECORD, index=False)
 
-# 📌 **Sistemde kayıtlı ağırlıkları geri yükleme fonksiyonu**
 def load_weights():
     if os.path.exists(WEIGHTS_RECORD):
         df = pd.read_csv(WEIGHTS_RECORD)
         return dict(zip(df["Parametre"], df["Ağırlık"]))
-    return {
-        "sektor": 0.30,
-        "carpan": 0.20,
-        "mahalle": 0.30,
-        "sube_kablo": 0.20
-    }
+    return {"sektor": 0.30, "carpan": 0.20, "mahalle": 0.30, "sube_kablo": 0.20}
 
-# 📌 **Sistemde dosyalar varsa koru, yoksa oluştur**
 for file in FILE_PATHS.values():
     if not os.path.exists(file):
         pd.DataFrame(columns=["Değer"]).to_csv(file, index=False, sep=";")
 
-# 📌 **Session State İçin Gerekli Değerleri Tanımla**
 if "admin_authenticated" not in st.session_state:
     st.session_state["admin_authenticated"] = False
 if "uploaded_files" not in st.session_state:
@@ -287,9 +275,8 @@ if "uploaded_files" not in st.session_state:
 if "weights" not in st.session_state:
     st.session_state["weights"] = load_weights()
 
-# --- ADMIN PANELİ GİRİŞİ ---
+# 📌 **Admin Girişi**
 def admin_login():
-    """Admin giriş ekranı."""
     st.sidebar.subheader("🔐 Admin Girişi")
     
     username = st.sidebar.text_input("Kullanıcı Adı", key="admin_username_input")
@@ -302,22 +289,20 @@ def admin_login():
         else:
             st.sidebar.error("🚫 Hatalı kullanıcı adı veya şifre!")
 
-    # 📌 **Admin Çıkış Butonu**
-    if st.session_state["admin_authenticated"]:
-        if st.sidebar.button("🚪 Çıkış Yap"):
-            st.session_state["admin_authenticated"] = False
-            st.session_state.clear()  
-            st.sidebar.success("✅ Başarıyla çıkış yapıldı!")
-            st.rerun()  
+    if st.sidebar.button("🚪 Çıkış Yap"):
+        st.session_state["admin_authenticated"] = False
+        st.session_state["admin_username"] = ""  
+        st.session_state["admin_password"] = ""  
+        st.sidebar.success("✅ Başarıyla çıkış yapıldı!")
+        st.rerun()
 
 admin_login()
 
-# 🟠 **Admin Paneli Açıldıysa Listeler Yönetilebilir**
+# 📌 **Admin giriş yaptıysa, listeleri ve ağırlıkları yönetebilir**
 if st.session_state["admin_authenticated"]:
     st.sidebar.subheader("📂 **Listeleri Güncelle**")
 
     for list_name, file_path in FILE_PATHS.items():
-        # Önceki yüklenen dosya varsa ekrana yazdır
         if st.session_state["uploaded_files"].get(list_name):
             st.sidebar.markdown(f"📂 **Son Yüklenen Dosya:** `{st.session_state['uploaded_files'][list_name]}`")
 
@@ -328,7 +313,6 @@ if st.session_state["admin_authenticated"]:
                 df = pd.read_csv(uploaded_file, encoding="utf-8", delimiter=";", low_memory=False)
                 df.to_csv(file_path, index=False, sep=";")
                 
-                # Yeni dosya yolunu kaydet
                 st.session_state["uploaded_files"][list_name] = file_path  
                 save_uploaded_files(st.session_state["uploaded_files"])  
 
@@ -345,7 +329,6 @@ if st.session_state["admin_authenticated"]:
     mahalle_weight = st.sidebar.number_input("Mahalle Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=st.session_state["weights"]["mahalle"])
     sube_kablo_weight = st.sidebar.number_input("Şube Kablo Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=st.session_state["weights"]["sube_kablo"])
 
-    # 📌 **Ağırlıkları Session State'e Kaydet**
     if st.sidebar.button("✅ Ağırlıkları Kaydet"):
         st.session_state["weights"] = {
             "sektor": sektor_weight,
@@ -356,9 +339,9 @@ if st.session_state["admin_authenticated"]:
         save_weights(st.session_state["weights"])
         st.sidebar.success("📌 Ağırlık katsayıları güncellendi!")
 
-    # 📌 **Ağırlıkların toplamı 1 mi kontrol et**
     if round(sektor_weight + carpan_weight + mahalle_weight + sube_kablo_weight, 2) != 1.00:
         st.sidebar.error("❌ Ağırlık katsayılarının toplamı **1 olmalıdır!**")
+
 
 
 
