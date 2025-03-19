@@ -236,9 +236,15 @@ for file in FILE_PATHS.values():
     if not os.path.exists(file):
         pd.DataFrame(columns=["Değer"]).to_csv(file, index=False, sep=";")
 
-# --- SESSION STATE (Admin Giriş için) ---
+# 📌 Admin erişim kontrolü
 if "admin_authenticated" not in st.session_state:
     st.session_state["admin_authenticated"] = False
+if "admin_username" not in st.session_state:
+    st.session_state["admin_username"] = ""
+if "admin_password" not in st.session_state:
+    st.session_state["admin_password"] = ""
+
+
 
 # --- ADMIN PANELI GIRIŞI ---
 def admin_login():
@@ -248,7 +254,7 @@ def admin_login():
     password = st.sidebar.text_input("Şifre", type="password")
     
     if st.sidebar.button("Giriş Yap"):
-        if username == "admin" and password == "password123":  # Şifre değiştirilebilir
+        if username == "admin" and password == "123":  # Şifre değiştirilebilir
             st.session_state["admin_authenticated"] = True
             st.sidebar.success("✅ Başarıyla giriş yapıldı!")
         else:
@@ -293,11 +299,16 @@ if st.session_state["admin_authenticated"]:
 
 
 
-    # Admin çıkış yapma butonu
-    if st.sidebar.button("🚪 Çıkış Yap"):
-        st.session_state["admin_authenticated"] = False
-        st.rerun()  # Admin çıkış yaptığında sayfa yenilenecek ve yükleme yerleri kapanacak
+    # Çıkış butonu
+    if st.session_state["admin_authenticated"]:
+        if st.sidebar.button("🚪 Çıkış Yap"):
+            st.session_state["admin_authenticated"] = False
+            st.session_state["admin_username"] = ""  # Kullanıcı adını sıfırla
+            st.session_state["admin_password"] = ""  # Şifreyi sıfırla
+            st.sidebar.success("✅ Başarıyla çıkış yapıldı!")
+            st.rerun()  # Sayfayı yenile
 
+admin_login()
 
 
 #BURAYA KADAR OKEYDİR.
