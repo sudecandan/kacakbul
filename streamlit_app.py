@@ -284,6 +284,15 @@ if st.session_state["admin_authenticated"]:
 
 
 
+# 📌 **Session State ile Analiz Sonuçlarını Kaydet**
+if "analysis_results" not in st.session_state:
+    st.session_state.analysis_results = None
+if "selected_tesisat" not in st.session_state:
+    st.session_state.selected_tesisat = None  # Kullanıcının seçtiği tesisat numarası
+
+
+
+
 
 
 # **Analizi Başlat Butonu**
@@ -392,6 +401,41 @@ if st.button("🚀 Analizi Başlat"):
         )
     else:
         st.warning("⚠️ Seçilen analizler sonucunda şüpheli tesisat bulunamadı!")
+
+
+
+# 📌 **Eğer analiz sonuçları varsa, sabit olarak ekranda göster**
+if st.session_state.analysis_results is not None:
+    st.success(f"✅ Analizler Tamamlandı! **Toplam {len(st.session_state.analysis_results)} şüpheli tesisat bulundu.**")
+    st.dataframe(st.session_state.analysis_results)
+
+    # 📌 **Şüpheli Tesisatlara Tıklanabilir Butonlar Ekle**
+    for index, row in st.session_state.analysis_results.iterrows():
+        if st.button(f"📊 {row['Şüpheli Tesisat']} Grafiğini Göster", key=row["Şüpheli Tesisat"]):
+            st.session_state.selected_tesisat = row["Şüpheli Tesisat"]
+
+# 📌 **Seçili tesisatın grafiğini göster**
+if st.session_state.selected_tesisat is not None:
+    tesisat_no = st.session_state.selected_tesisat
+    st.subheader(f"📈 {tesisat_no} Numaralı Tesisatın Grafiği")
+
+    # 📌 **Örnek Grafik Çizimi**
+    fig, ax = plt.subplots()
+    ax.plot(["Ocak", "Şubat", "Mart", "Nisan"], [100, 90, 70, 40], marker="o", linestyle="-")
+    ax.set_title(f"Tesisat {tesisat_no} Tüketim Grafiği")
+    ax.set_ylabel("Tüketim (kWh)")
+    ax.set_xlabel("Aylar")
+    st.pyplot(fig)
+
+# 📌 **Mevsimsel Dönem Analizi İçin Checkbox**
+col1 = st.columns(1)[0]  # Tek sütun kullan
+
+with col1:
+    seasonal_analysis_enabled = st.checkbox("### **Mevsimsel Dönem Analizi**", key="seasonal_analysis")
+
+if seasonal_analysis_enabled:
+    decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
+
 
 
 
