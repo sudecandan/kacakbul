@@ -398,15 +398,30 @@ if st.button("🚀 Analizi Başlat"):
 
 import streamlit as st
 
-# 📌 Mevsimsel Dönem Analizi için başlık ve checkbox'ı hizalama
-col1, col2 = st.columns([0.05, 0.95])  # Checkbox ve başlık için oranlar
+# 📌 Mevsimsel Dönem Analizi için başlık ve checkbox'ı aynı hizada göster
+st.markdown(
+    """
+    <style>
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;  /* Checkbox ile metin arasındaki boşluk */
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# **Checkbox ve metni yan yana hizala**
+col1, col2 = st.columns([0.05, 0.95])
 
 with col1:
-    seasonal_analysis_enabled = st.checkbox("Mevsimsel Dönem Analizi", key="seasonal_analysis")  
+    seasonal_analysis_enabled = st.checkbox("", key="seasonal_analysis")
+
+with col2:
+    st.markdown('<div class="checkbox-label"><label>Mevsimsel Dönem Analizi</label></div>', unsafe_allow_html=True)
 
 # Eğer checkbox aktifse, kullanıcıdan yüzde değeri isteyen alanı göster
 if seasonal_analysis_enabled:
     decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
-
-
 
