@@ -254,14 +254,26 @@ if "admin_username" not in st.session_state:
 if "admin_password" not in st.session_state:
     st.session_state["admin_password"] = ""
 
-# --- ADMIN PANELI GIRIŞI ---
+# 📌 **Admin'in değiştirdiği dosya yollarını kaydet**
+if "uploaded_files" not in st.session_state:
+    st.session_state["uploaded_files"] = {key: None for key in FILE_PATHS.keys()}
+
+# 📌 **Admin'in değiştirdiği ağırlıkları sakla**
+if "weights" not in st.session_state:
+    st.session_state["weights"] = {
+        "sektor": 0.30,
+        "carpan": 0.20,
+        "mahalle": 0.30,
+        "sube_kablo": 0.20
+    }
+
+# --- ADMIN PANELI GIRIŞİ ---
 def admin_login():
     """Admin giriş ekranı."""
     st.sidebar.subheader("🔐 Admin Girişi")
     
-    # Kullanıcı adı ve şifre alanlarını session state'e bağla
-    username = st.sidebar.text_input("Kullanıcı Adı", value=st.session_state["admin_username"], key="admin_username_input")
-    password = st.sidebar.text_input("Şifre", type="password", value=st.session_state["admin_password"], key="admin_password_input")
+    username = st.sidebar.text_input("Kullanıcı Adı", key="admin_username_input")
+    password = st.sidebar.text_input("Şifre", type="password", key="admin_password_input")
 
     if st.sidebar.button("Giriş Yap"):
         if username == "admin" and password == "password123":  
@@ -276,11 +288,11 @@ def admin_login():
     if st.session_state["admin_authenticated"]:
         if st.sidebar.button("🚪 Çıkış Yap"):
             st.session_state["admin_authenticated"] = False
-            st.session_state["admin_username"] = ""  # Kullanıcı adını temizle
-            st.session_state["admin_password"] = ""  # Şifreyi temizle
-            st.session_state.clear()  # Tüm session'ı temizle
+            st.session_state["admin_username"] = ""  
+            st.session_state["admin_password"] = ""  
+            st.session_state.clear()  
             st.sidebar.success("✅ Başarıyla çıkış yapıldı!")
-            st.rerun()  # Sayfayı yenile
+            st.rerun()  
 
 admin_login()
 
@@ -293,11 +305,9 @@ if st.session_state["admin_authenticated"]:
         
         if uploaded_file:
             try:
-                # Dosya okuma hatalarını önlemek için güvenlik artırıldı
                 df = pd.read_csv(uploaded_file, encoding="utf-8", delimiter=";", low_memory=False)
-                
-                # Format korunsun diye delimiter ile kaydet
                 df.to_csv(file_path, index=False, sep=";")
+                st.session_state["uploaded_files"][list_name] = file_path  # Kaydedilen dosya güncellendi
                 st.sidebar.success(f"✅ {list_name} güncellendi!")
             except Exception as e:
                 st.sidebar.error(f"⚠️ Hata: Dosya yüklenemedi! {str(e)}")
@@ -306,12 +316,22 @@ if st.session_state["admin_authenticated"]:
 if st.session_state["admin_authenticated"]:
     st.sidebar.subheader("📊 **Ağırlık Katsayılarını Girin**")
 
-    sektor_weight = st.sidebar.number_input("Sektör Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.30)
-    carpan_weight = st.sidebar.number_input("Çarpan Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.20)
-    mahalle_weight = st.sidebar.number_input("Mahalle Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.30)
-    sube_kablo_weight = st.sidebar.number_input("Şube Kablo Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=0.20)
+    sektor_weight = st.sidebar.number_input("Sektör Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=st.session_state["weights"]["sektor"])
+    carpan_weight = st.sidebar.number_input("Çarpan Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=st.session_state["weights"]["carpan"])
+    mahalle_weight = st.sidebar.number_input("Mahalle Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=st.session_state["weights"]["mahalle"])
+    sube_kablo_weight = st.sidebar.number_input("Şube Kablo Puanı Ağırlığı", min_value=0.0, max_value=1.0, step=0.01, value=st.session_state["weights"]["sube_kablo"])
 
-    # 📌 Ağırlıkların toplamı 1 mi kontrol et
+    # 📌 **Ağırlıkları Session State'e Kaydet**
+    if st.sidebar.button("✅ Ağırlıkları Kaydet"):
+        st.session_state["weights"] = {
+            "sektor": sektor_weight,
+            "carpan": carpan_weight,
+            "mahalle": mahalle_weight,
+            "sube_kablo": sube_kablo_weight
+        }
+        st.sidebar.success("📌 Ağırlık katsayıları güncellendi!")
+
+    # 📌 **Ağırlıkların toplamı 1 mi kontrol et**
     if round(sektor_weight + carpan_weight + mahalle_weight + sube_kablo_weight, 2) != 1.00:
         st.sidebar.error("❌ Ağırlık katsayılarının toplamı **1 olmalıdır!**")
 
