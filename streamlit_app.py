@@ -162,7 +162,7 @@ if el31_file and zblir_file and zdm240_file:
 
         st.button("Tümünü Seç", on_click=toggle_all)
 
-
+if any(st.session_state.selected_analysis.values()):
 
     col1, col2 = st.columns(2)
 
