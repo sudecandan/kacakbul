@@ -142,16 +142,13 @@ if zblir_file:
 # **ZDM240 VERİLERİNİ DÜZENLEME**
 if zdm240_file:
     def clean_zdm240(df):
-        # 'Tük_' ile başlayan sütunları al
         tuk_columns = [col for col in df.columns if col.startswith('Tük_')]
-        # 'Tesisat' ve 'Mali yıl' bazında gruplayarak toplama işlemi yap
         df_grouped = df.groupby(['Tesisat', 'Mali yıl'], as_index=False)[tuk_columns].sum()
         return df_grouped
 
     try:
         df_zdm240_cleaned = clean_zdm240(df_zdm240)
 
-        # ZIP dosyasına dönüştürme (EL31 ve ZBLIR formatına uygun şekilde)
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, "w") as zipf:
             for tesisat, group in df_zdm240_cleaned.groupby("Tesisat"):
@@ -162,16 +159,14 @@ if zdm240_file:
 
         st.success("✅ ZDM240 dosyası başarıyla düzenlendi ve ZIP’e aktarıldı.")
 
-    except Exception as e:
-        st.error(f"⚠️ ZDM240 düzenleme işlemi sırasında hata oluştu: {e}")
-
-
-    if zip_buffer:
+        # ✅ ZIP indir butonu
         st.download_button("📥 Düzenlenmiş ZDM240 ZIP'ini İndir",
                            zip_buffer,
                            file_name="zdm240_duzenlenmis.zip",
                            mime="application/zip")
 
+    except Exception as e:
+        st.error(f"⚠️ ZDM240 düzenleme işlemi sırasında hata oluştu: {e}")
 
 
 
