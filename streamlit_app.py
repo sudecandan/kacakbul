@@ -130,6 +130,62 @@ if zblir_file:
 
     zip_buffer.seek(0)
 
+
+
+
+
+
+
+
+
+
+# **ZDM240 VERİLERİNİ DÜZENLEME**
+if zdm240_file:
+    def clean_zdm240(df):
+        # 'Tük_' ile başlayan sütunları al
+        tuk_columns = [col for col in df.columns if col.startswith('Tük_')]
+        # 'Tesisat' ve 'Mali yıl' bazında gruplayarak toplama işlemi yap
+        df_grouped = df.groupby(['Tesisat', 'Mali yıl'], as_index=False)[tuk_columns].sum()
+        return df_grouped
+
+    try:
+        df_zdm240_cleaned = clean_zdm240(df_zdm240)
+
+        # ZIP dosyasına dönüştürme (EL31 ve ZBLIR formatına uygun şekilde)
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w") as zipf:
+            for tesisat, group in df_zdm240_cleaned.groupby("Tesisat"):
+                file_name = f"{tesisat}.csv"
+                csv_data = group.to_csv(sep=";", index=False, decimal=",").encode("utf-8")
+                zipf.writestr(file_name, csv_data)
+        zip_buffer.seek(0)
+
+        st.success("✅ ZDM240 dosyası başarıyla düzenlendi ve ZIP’e aktarıldı.")
+
+    except Exception as e:
+        st.error(f"⚠️ ZDM240 düzenleme işlemi sırasında hata oluştu: {e}")
+
+
+    if zip_buffer:
+        st.download_button("📥 Düzenlenmiş ZDM240 ZIP'ini İndir",
+                           zip_buffer,
+                           file_name="zdm240_duzenlenmis.zip",
+                           mime="application/zip")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # 📊 Kullanıcıdan analiz için giriş al
 
 col1, col2 = st.columns([1, 1])  
