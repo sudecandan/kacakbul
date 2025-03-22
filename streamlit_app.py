@@ -22,11 +22,12 @@ with col3:
 
 
 
-st.subheader("📊 Yüklenen Dosya Önizlemesi")
+
     
 col1, col2, col3 = st.columns(3)
 
 if el31_file:
+    st.subheader("📊 Yüklenen Dosya Önizlemesi")
     with col1:
         df_el31 = pd.read_csv(el31_file, delimiter=";", encoding="utf-8")
         st.write("🔹 **EL31 Dosyası Önizleme**")
