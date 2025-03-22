@@ -7,7 +7,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 import os
 
 # STREAMLIT BAŞLIĞI
-st.title("⚡ KaçakBul")
+#st.title("⚡ KaçakBul")
 
 # DOSYA YÜKLEME KISIMLARI
 col1, col2, col3 = st.columns(3)
