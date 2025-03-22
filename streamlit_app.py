@@ -134,12 +134,10 @@ if zblir_file:
 
 
 
+    
 
 
-
-
-
-if zdm240_file:
+    # --- ZDM240 Düzenleme ve ZIP Oluşturma ---
     def clean_zdm240(df):
         tuk_columns = [col for col in df.columns if col.startswith('Tük_')]
         df_grouped = df.groupby(['Tesisat', 'Mali yıl'], as_index=False)[tuk_columns].sum()
@@ -148,24 +146,33 @@ if zdm240_file:
     try:
         df_zdm240_cleaned = clean_zdm240(df_zdm240)
 
-        zip_buffer = BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w") as zipf:
+        # ZIP dosyası oluşturma
+        zip_buffer_zdm240 = BytesIO()
+        with zipfile.ZipFile(zip_buffer_zdm240, "w") as zipf:
             for tesisat, group in df_zdm240_cleaned.groupby("Tesisat"):
                 file_name = f"{tesisat}.csv"
                 csv_data = group.to_csv(sep=";", index=False, decimal=",").encode("utf-8")
                 zipf.writestr(file_name, csv_data)
-        zip_buffer.seek(0)
 
-        st.success("✅ ZDM240 dosyası başarıyla düzenlendi ve ZIP’e aktarıldı.")
+        zip_buffer_zdm240.seek(0)
+        st.success("✅ ZDM240 dosyası başarıyla düzenlendi ve ZIP dosyasına aktarıldı.")
 
-        # ✅ ZIP İNDİRME BUTONU BURADA OLMALI
-        st.download_button("📥 Düzenlenmiş ZDM240 ZIP'ini İndir",
-                           zip_buffer,
-                           file_name="zdm240_duzenlenmis.zip",
-                           mime="application/zip")
+        # ZIP indir butonu
+        st.download_button(
+            label="📥 Düzenlenmiş ZDM240 ZIP'ini İndir",
+            data=zip_buffer_zdm240,
+            file_name="zdm240_duzenlenmis.zip",
+            mime="application/zip"
+        )
 
     except Exception as e:
         st.error(f"⚠️ ZDM240 düzenleme işlemi sırasında hata oluştu: {e}")
+
+
+
+
+
+
 
 
 
