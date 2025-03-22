@@ -139,7 +139,6 @@ if zblir_file:
 
 
 
-# **ZDM240 VERİLERİNİ DÜZENLEME**
 if zdm240_file:
     def clean_zdm240(df):
         tuk_columns = [col for col in df.columns if col.startswith('Tük_')]
@@ -159,7 +158,7 @@ if zdm240_file:
 
         st.success("✅ ZDM240 dosyası başarıyla düzenlendi ve ZIP’e aktarıldı.")
 
-        # ✅ ZIP indir butonu
+        # ✅ ZIP İNDİRME BUTONU BURADA OLMALI
         st.download_button("📥 Düzenlenmiş ZDM240 ZIP'ini İndir",
                            zip_buffer,
                            file_name="zdm240_duzenlenmis.zip",
@@ -167,6 +166,7 @@ if zdm240_file:
 
     except Exception as e:
         st.error(f"⚠️ ZDM240 düzenleme işlemi sırasında hata oluştu: {e}")
+
 
 
 
