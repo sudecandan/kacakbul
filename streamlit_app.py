@@ -40,10 +40,6 @@ if zdm240_file:
         st.dataframe(df_zdm240.head())
 
 
-
-
-
-
 # **EL31 VERİLERİNİ DÜZENLEME**
 if el31_file:
 
@@ -98,12 +94,6 @@ if el31_file:
 
     zip_buffer.seek(0)
 
-    
-    
-
-
-
-
 # **ZBLIR_002 VERİLERİNİ DÜZENLEME**
 if zblir_file:
     def filter_latest_two_contacts(df):
@@ -150,6 +140,7 @@ if zblir_file:
 
 
 # 📊 Kullanıcıdan analiz için giriş al
+if el31_file and zblir_file and zdm240_file:
 col1, col2 = st.columns([1, 1])  
 
 # 🟢 **Analiz Seçenekleri**
