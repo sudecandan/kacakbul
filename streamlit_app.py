@@ -141,7 +141,7 @@ if zblir_file:
 
 # 📊 Kullanıcıdan analiz için giriş al
 if el31_file and zblir_file and zdm240_file:
-col1, col2 = st.columns([1, 1])  
+    col1, col2 = st.columns([1, 1])  
 
 # 🟢 **Analiz Seçenekleri**
 with col1:
