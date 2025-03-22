@@ -140,29 +140,29 @@ if zblir_file:
 
 
 # 📊 Kullanıcıdan analiz için giriş al
-if el31_file and zblir_file and zdm240_file:
-    col1, col2 = st.columns([1, 1])  
+
+col1, col2 = st.columns([1, 1])  
 
 # 🟢 **Analiz Seçenekleri**
-    with col1:
-        st.markdown("#### 📊 Hangi Analiz Yapılacak?")
+with col1:
+    st.markdown("#### 📊 Hangi Analiz Yapılacak?")
 
-        analysis_options = ["P Analizi", "T1 Analizi", "T2 Analizi", "T3 Analizi"]
+    analysis_options = ["P Analizi", "T1 Analizi", "T2 Analizi", "T3 Analizi"]
 
-        if "selected_analysis" not in st.session_state:
-            st.session_state.selected_analysis = {opt: False for opt in analysis_options}
+    if "selected_analysis" not in st.session_state:
+        st.session_state.selected_analysis = {opt: False for opt in analysis_options}
 
-        for option in analysis_options:
-            st.session_state.selected_analysis[option] = st.checkbox(option, st.session_state.selected_analysis[option])
+    for option in analysis_options:
+        st.session_state.selected_analysis[option] = st.checkbox(option, st.session_state.selected_analysis[option])
 
-        def toggle_all():
-            all_selected = all(st.session_state.selected_analysis.values())
-            for key in st.session_state.selected_analysis:
-                st.session_state.selected_analysis[key] = not all_selected
+    def toggle_all():
+        all_selected = all(st.session_state.selected_analysis.values())
+        for key in st.session_state.selected_analysis:
+            st.session_state.selected_analysis[key] = not all_selected
 
-        st.button("Tümünü Seç", on_click=toggle_all)
+    st.button("Tümünü Seç", on_click=toggle_all)
 
-if any(st.session_state.selected_analysis.values()):
+
 
     col1, col2 = st.columns(2)
 
