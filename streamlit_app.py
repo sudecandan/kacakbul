@@ -137,30 +137,31 @@ if zblir_file:
     
 
 
-    # --- ZDM240 Düzenleme ve ZIP Oluşturma ---
+# **ZDM240 VERİLERİNİ DÜZENLEME**
+if zdm240_file:
+
     def clean_zdm240(df):
-        tuk_columns = [col for col in df.columns if col.startswith('Tük_')]
-        df_grouped = df.groupby(['Tesisat', 'Mali yıl'], as_index=False)[tuk_columns].sum()
+        tuk_columns = [col for col in df.columns if col.startswith("Tük_")]
+        df_grouped = df.groupby(["Tesisat", "Mali yıl"], as_index=False)[tuk_columns].sum()
         return df_grouped
 
     try:
         df_zdm240_cleaned = clean_zdm240(df_zdm240)
 
-        # ZIP dosyası oluşturma
-        zip_buffer_zdm240 = BytesIO()
-        with zipfile.ZipFile(zip_buffer_zdm240, "w") as zipf:
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w") as zipf:
             for tesisat, group in df_zdm240_cleaned.groupby("Tesisat"):
                 file_name = f"{tesisat}.csv"
                 csv_data = group.to_csv(sep=";", index=False, decimal=",").encode("utf-8")
                 zipf.writestr(file_name, csv_data)
 
-        zip_buffer_zdm240.seek(0)
+        zip_buffer.seek(0)
         st.success("✅ ZDM240 dosyası başarıyla düzenlendi ve ZIP dosyasına aktarıldı.")
 
-        # ZIP indir butonu
+        # 📥 İndirme Butonu
         st.download_button(
             label="📥 Düzenlenmiş ZDM240 ZIP'ini İndir",
-            data=zip_buffer_zdm240,
+            data=zip_buffer,
             file_name="zdm240_duzenlenmis.zip",
             mime="application/zip"
         )
