@@ -600,7 +600,7 @@ if st.button("📊 **Tesisatları Sırala**"):
         mahalle_weight = st.session_state["weights"]["Mahalle Puanı Ağırlığı"]
         sube_kablo_weight = st.session_state["weights"]["Şube Kablo Puanı Ağırlığı"]
 
-        supheli_sonuc = pd.read_csv('analiz_sonuclari.csv', dtype=str, delimiter=';')
+    
 
         
         # 📌 **Verileri Sözlüklere Dönüştürme**
