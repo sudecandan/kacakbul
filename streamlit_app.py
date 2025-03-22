@@ -8,7 +8,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 # STREAMLIT BAŞLIĞI
 st.title("⚡ KaçakBul")
 
-# Kullanıcıdan dosya yükleme için üç sütun
+# DOSYA YÜKLEME KISIMLARI
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -20,14 +20,10 @@ with col2:
 with col3:
     zdm240_file = st.file_uploader("📂 ZDM240 Dosyasını Yükleyin (.csv)", type=["csv"])
 
-
-
-
-    
+# YÜKLENEN DOSYALARIN ÖNİZLEMESİ    
 col1, col2, col3 = st.columns(3)
 
 if el31_file:
-    st.subheader("📊 Yüklenen Dosya Önizlemesi")
     with col1:
         df_el31 = pd.read_csv(el31_file, delimiter=";", encoding="utf-8")
         st.write("🔹 **EL31 Dosyası Önizleme**")
@@ -48,16 +44,7 @@ if zdm240_file:
 
 
 
-
-
-
-
-
-
-
-
-
-# **EL31 VERİLERİNİ DÜZENLE BUTONU**
+# **EL31 VERİLERİNİ DÜZENLEME**
 if el31_file:
 
     def clean_el31(df):
@@ -117,7 +104,7 @@ if el31_file:
 
 
 
-# **ZBLIR_002 VERİLERİNİ DÜZENLE BUTONU**
+# **ZBLIR_002 VERİLERİNİ DÜZENLEME**
 if zblir_file:
     def filter_latest_two_contacts(df):
         """Her tesisat için en güncel iki muhatabı seçer."""
