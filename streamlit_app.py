@@ -5,12 +5,10 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
-
-
 # STREAMLIT BAŞLIĞI
 st.title("⚡ KaçakBul")
 
-# Kullanıcıdan dosya yükleme için iki sütun
+# Kullanıcıdan dosya yükleme için üç sütun
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -22,26 +20,40 @@ with col2:
 with col3:
     zdm240_file = st.file_uploader("📂 ZDM240 Dosyasını Yükleyin (.csv)", type=["csv"])
 
-# Kullanıcı dosyaları yüklediyse önizleme göster
-if el31_file and zblir_file and zdm240_file:
-    st.subheader("📊 Yüklenen Dosya Önizlemesi")
-    
-    col1, col2, col3 = st.columns(3)
 
+
+st.subheader("📊 Yüklenen Dosya Önizlemesi")
+    
+col1, col2, col3 = st.columns(3)
+
+if el31_file:
     with col1:
         df_el31 = pd.read_csv(el31_file, delimiter=";", encoding="utf-8")
         st.write("🔹 **EL31 Dosyası Önizleme**")
         st.dataframe(df_el31.head())
-
+if zblir_file:
     with col2:
         df_zblir = pd.read_csv(zblir_file, delimiter=";", encoding="utf-8")
         st.write("🔹 **ZBLIR_002 Dosyası Önizleme**")
         st.dataframe(df_zblir.head())
-
+if zdm240_file:
     with col3:
         df_zdm240 = pd.read_csv(zdm240_file, delimiter=";", encoding="utf-8")
         st.write("🔹 **ZDM240 Dosyası Önizleme**")
         st.dataframe(df_zdm240.head())
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # **EL31 VERİLERİNİ DÜZENLE BUTONU**
