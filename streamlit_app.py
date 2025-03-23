@@ -731,14 +731,12 @@ if st.button("📊 **Tesisatları Sırala**"):
     if "q_analysis_results" in st.session_state and st.session_state.q_analysis_results is not None:
         if not st.session_state.q_analysis_results.empty:
             aktif_analiz = st.session_state.q_analysis_results
-            st.info("ℹ️ Mevsimsel analiz (Q) sonuçları sıralamaya dahil edildi.")
     
     # Q yoksa, P/T analizini kullan
     if aktif_analiz is None:
         if "analysis_results" in st.session_state and st.session_state.analysis_results is not None:
             if not st.session_state.analysis_results.empty:
                 aktif_analiz = st.session_state.analysis_results
-                st.info("ℹ️ Sadece P ve T analiz sonuçları sıralamaya dahil edildi.")
     
     # Eğer hala analiz bulunamadıysa
     if aktif_analiz is None:
