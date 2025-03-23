@@ -151,7 +151,7 @@ if zblir_file:
     zip_buffer.seek(0)
 
 
-# Eğer dosya yüklendiyse işlemlere başla
+# ZDM240 VERİLERİNİ DÜZENLEME
 if zdm240_file:
     try:
         # Aynı dosyayı birden fazla kez kullanmadan önce imleci başa al
@@ -165,17 +165,24 @@ if zdm240_file:
 
         # Gruplama: 'Tesisat' ve 'Mali yıl' bazında tüketimlerin toplamı
         df_grouped = df_zdm240.groupby(['Tesisat', 'Mali yıl'], as_index=False)[tuk_columns].sum()
+   
+        # 💾 Q analizi için bellekte sakla
+        st.session_state.df_zdm240_cleaned = df_grouped
+        
 
         # CSV çıktısını belleğe yaz
         output = BytesIO()
         df_grouped.to_csv(output, sep=';', index=False, decimal=',')
         output.seek(0)
 
+    
 
     except pd.errors.EmptyDataError:
         st.error("⚠️ Dosya boş görünüyor. Lütfen geçerli bir ZDM240 dosyası yükleyin.")
     except Exception as e:
         st.error(f"🚨 Bir hata oluştu: {e}")
+
+
 
 
 
