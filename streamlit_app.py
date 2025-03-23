@@ -5,6 +5,9 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 import os
+import tempfile
+
+import io
 
 # STREAMLIT BAŞLIĞI
 st.title("⚡ KaçakBul") 
@@ -13,13 +16,19 @@ st.title("⚡ KaçakBul")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    el31_file = st.file_uploader("📂 EL31 Dosyasını Yükleyin (.csv)", type=["csv"])
+    st.markdown("📂 EL31 Dosyasını Yükleyin", help="Okunan Sayaç Durumu sütununda 1000'lik ayırıcı olarak '.' kullanılmamalı.")
+    el31_file = st.file_uploader("", type=["csv"], key="el31")
+    #el31_file = st.file_uploader("📂 EL31 Dosyasını Yükleyin (.csv)", type=["csv"])
     
 with col2:
-    zblir_file = st.file_uploader("📂 ZBLIR_002 Dosyasını Yükleyin (.csv)", type=["csv"])
+    st.markdown("📂 ZBLIR_002 Dosyasını Yükleyin", help="Ortalama Tüketim sütununda 1000'lik ayırıcı olarak '.' kullanılmamalı.")
+    zblir_file = st.file_uploader("", type=["csv"], key="zblir")
+    #zblir_file = st.file_uploader("📂 ZBLIR_002 Dosyasını Yükleyin (.csv)", type=["csv"])
 
 with col3:
-    zdm240_file = st.file_uploader("📂 ZDM240 Dosyasını Yükleyin (.csv)", type=["csv"])
+    st.markdown("📂 ZDM240 Dosyasını Yükleyin", help="Tük_Ay sütunlarında 1000'lik ayırıcı olarak '.' kullanılmamalı.")
+    zdm240_file = st.file_uploader("", type=["csv"], key="zdm240")
+    #zdm240_file = st.file_uploader("📂 ZDM240 Dosyasını Yükleyin (.csv)", type=["csv"])
 
 # YÜKLENEN DOSYALARIN ÖNİZLEMESİ    
 col1, col2, col3 = st.columns(3)
@@ -39,6 +48,16 @@ if zdm240_file:
         df_zdm240 = pd.read_csv(zdm240_file, delimiter=";", encoding="utf-8")
         st.write("🔹 **ZDM240 Dosyası Önizleme**")
         st.dataframe(df_zdm240.head())
+
+
+
+
+
+
+
+
+# 1. BÖLÜM: VERİ DÜZENLEME
+
 
 
 # **EL31 VERİLERİNİ DÜZENLEME**
@@ -67,14 +86,21 @@ if el31_file:
         df = df.sort_values(by=["Tesisat", "Sayaç okuma tarihi", "Okunan sayaç durumu"], ascending=[True, True, False])
         return df.groupby(["Tesisat", "Sayaç okuma tarihi"], as_index=False).first()
 
-    # **EL31 Verilerini Temizleme**
+    def remain_last_two(df):
+        df["Sayaç okuma tarihi"] = pd.to_datetime(df["Sayaç okuma tarihi"], dayfirst=True)
+        df = df.sort_values(by=["Tesisat", "Sayaç okuma tarihi"], ascending=[True, False])
+        df = df.groupby("Tesisat").apply(lambda x: x[x["Muhatap adı"].isin(x["Muhatap adı"].unique()[:2])])
+        return df.reset_index(drop=True)
+
+    # 🔄 1. Temizleme ve filtreleme
     df_el31_cleaned = clean_el31(df_el31)
     df_el31_cleaned = only_p_lines(df_el31_cleaned)
     df_el31_filtered = filter_max_reading(df_el31_cleaned)
+    df_el31_filtered = remain_last_two(df_el31_filtered)  # ⬅️ ENTEGRASYON BURADA
 
-    # **ZIP dosyasına kaydetme**
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w") as zipf:
+    # 📦 2. ZIP'e yaz
+    zip_buffer_el31 = BytesIO()
+    with zipfile.ZipFile(zip_buffer_el31, "w") as zipf:
         for tesisat, group in df_el31_filtered.groupby("Tesisat"):
             unique_muhatap = group["Muhatap adı"].unique()
 
@@ -93,7 +119,13 @@ if el31_file:
                 csv_data_AB = group.to_csv(sep=";", index=False).encode("utf-8")
                 zipf.writestr(file_name_AB, csv_data_AB)
 
-    zip_buffer.seek(0)
+    zip_buffer_el31.seek(0)  # Analiz için sıfırla
+
+
+
+
+
+
 
 # **ZBLIR_002 VERİLERİNİ DÜZENLEME**
 if zblir_file:
@@ -134,40 +166,42 @@ if zblir_file:
 
 
 
+
+# ZDM240 VERİLERİNİ DÜZENLEME
+if zdm240_file:
+    try:
+        # Aynı dosyayı birden fazla kez kullanmadan önce imleci başa al
+        zdm240_file.seek(0)
+
+        # Dosyayı oku – Türkçe CSV formatında (ondalık ',' ve ';' ayracı)
+        df_zdm240 = pd.read_csv(zdm240_file, delimiter=';', decimal=',')
+
+        # "Tük_" ile başlayan sütunları bul
+        tuk_columns = [col for col in df_zdm240.columns if col.startswith('Tük_')]
+
+        # Gruplama: 'Tesisat' ve 'Mali yıl' bazında tüketimlerin toplamı
+        df_grouped = df_zdm240.groupby(['Tesisat', 'Mali yıl'], as_index=False)[tuk_columns].sum()
+   
+        # 💾 Q analizi için bellekte sakla
+        st.session_state.df_zdm240_cleaned = df_grouped
+        
+
+        # CSV çıktısını belleğe yaz
+        output = BytesIO()
+        df_grouped.to_csv(output, sep=';', index=False, decimal=',')
+        output.seek(0)
+
+    
+
+    except pd.errors.EmptyDataError:
+        st.error("⚠️ Dosya boş görünüyor. Lütfen geçerli bir ZDM240 dosyası yükleyin.")
+    except Exception as e:
+        st.error(f"🚨 Bir hata oluştu: {e}")
+
+
     
 
 
-# **ZDM240 VERİLERİNİ DÜZENLEME**
-if zdm240_file:
-
-    def clean_zdm240(df):
-        tuk_columns = [col for col in df.columns if col.startswith("Tük_")]
-        df_grouped = df.groupby(["Tesisat", "Mali yıl"], as_index=False)[tuk_columns].sum()
-        return df_grouped
-
-    try:
-        df_zdm240_cleaned = clean_zdm240(df_zdm240)
-
-        zip_buffer = BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w") as zipf:
-            for tesisat, group in df_zdm240_cleaned.groupby("Tesisat"):
-                file_name = f"{tesisat}.csv"
-                csv_data = group.to_csv(sep=";", index=False, decimal=",").encode("utf-8")
-                zipf.writestr(file_name, csv_data)
-
-        zip_buffer.seek(0)
-        st.success("✅ ZDM240 dosyası başarıyla düzenlendi ve ZIP dosyasına aktarıldı.")
-
-        # 📥 İndirme Butonu
-        st.download_button(
-            label="📥 Düzenlenmiş ZDM240 ZIP'ini İndir",
-            data=zip_buffer,
-            file_name="zdm240_duzenlenmis.zip",
-            mime="application/zip"
-        )
-
-    except Exception as e:
-        st.error(f"⚠️ ZDM240 düzenleme işlemi sırasında hata oluştu: {e}")
 
 
 
@@ -176,18 +210,7 @@ if zdm240_file:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+# 2. BÖLÜM: ANALİZ
 
 # 📊 Kullanıcıdan analiz için giriş al
 
@@ -233,10 +256,12 @@ selected_analysis = [key for key, value in st.session_state.selected_analysis.it
 
 
 
-#BURAYA DÜZENLENMİŞ LİSTELER İÇİN OLUŞTURULAN GRAFİKLER İÇİN OLAN KODLAR GELECEK
 
 
 
+
+
+# 3. GÖMÜLÜ DOSYALAR VE ADMİN
 
 
 # 📌 **Saklanacak dosya yolları**
@@ -308,22 +333,34 @@ if "weights" not in st.session_state:
 def admin_login():
     """Admin giriş ekranı."""
     st.sidebar.subheader("🔐 Admin Girişi")
-    
-    username = st.sidebar.text_input("Kullanıcı Adı", key="admin_username_input")
-    password = st.sidebar.text_input("Şifre", type="password", key="admin_password_input")
 
-    if st.sidebar.button("Giriş Yap"):
-        if username == "admin" and password == "password123":  
-            st.session_state["admin_authenticated"] = True
-            st.sidebar.success("✅ Başarıyla giriş yapıldı!")
-        else:
-            st.sidebar.error("🚫 Hatalı kullanıcı adı veya şifre!")
+    if not st.session_state.get("admin_authenticated", False):
+        with st.sidebar.form("admin_login_form"):
+            username = st.text_input("Kullanıcı Adı", key="admin_username_input")
+            password = st.text_input("Şifre", type="password", key="admin_password_input")
+            submit = st.form_submit_button("Giriş")
 
-    # 📌 **Admin Çıkış Butonu**
-    if st.sidebar.button("🚪 Çıkış Yap"):
-        st.session_state["admin_authenticated"] = False
-        st.sidebar.success("✅ Başarıyla çıkış yapıldı!")
-        st.rerun()
+            if submit:
+                if username == "admin" and password == "123":
+                    st.session_state["admin_authenticated"] = True
+                    st.experimental_rerun()
+                else:
+                    st.error("🚫 Hatalı kullanıcı adı veya şifre!")
+
+    else:
+        with st.sidebar.form("admin_logout_form"):
+            submit_logout = st.form_submit_button("Çıkış")
+
+            if submit_logout:
+                # Oturumu ve input'ları sıfırla
+                st.session_state["admin_authenticated"] = False
+                for key in ["admin_username_input", "admin_password_input"]:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.experimental_rerun()
+
+
+
 
 admin_login()
 
@@ -397,15 +434,7 @@ if st.session_state["admin_authenticated"]:
 
 
 
-
-
-
-
-
-
-#BURAYA KADAR OKEYDİR.
-
-
+# 4. ANALİZ
 
 
 # 📌 **Session State ile Analiz Sonuçlarını Kaydet**
@@ -418,38 +447,73 @@ if "selected_tesisat" not in st.session_state:
 
 
 
-
-# **Analizi Başlat Butonu**
+# 🚀 Analizi Başlat Butonu
 if st.button("🚀 Analizi Başlat"):
 
     combined_results = {}
 
-    # **P Analizi Seçildiyse Çalıştır**
+    # ✅ P Analizi Fonksiyonu
+    def p_analizi(df, esik_orani, alt_esik_sayisi):
+        df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".", regex=True)
+        df["Okunan sayaç durumu"] = pd.to_numeric(df["Okunan sayaç durumu"], errors="coerce")
+        df = df.dropna(subset=["Okunan sayaç durumu"])
+
+        for tesisat, group in df.groupby("Tesisat"):
+            p_values = group[group["Endeks türü"] == "P"]["Okunan sayaç durumu"].dropna().tolist()
+            if not p_values:
+                continue
+
+            p_values_nonzero = [val for val in p_values if val > 0]
+            if len(p_values_nonzero) > 0:
+                p_avg = sum(p_values_nonzero) / len(p_values_nonzero)
+                esik_deger = p_avg * (1 - esik_orani / 100)
+
+                below_threshold_count = sum(1 for val in p_values_nonzero if val < esik_deger)
+
+                last_three_values = p_values_nonzero[-3:] if len(p_values_nonzero) >= 3 else []
+                if all(val > p_avg for val in last_three_values):
+                    continue  # son üç değer ortalamanın üstündeyse şüpheli sayma
+
+                if below_threshold_count > alt_esik_sayisi:
+                    if tesisat in combined_results:
+                        combined_results[tesisat].append("P")
+                    else:
+                        combined_results[tesisat] = ["P"]
+
+    # ✅ zip_buffer_el31 üzerinden tüm dosyalarda P analizi yap
     if "P Analizi" in selected_analysis:
-        def p_analizi(df, esik_orani, alt_esik_sayisi):
-            df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".", regex=True)
-            df["Okunan sayaç durumu"] = pd.to_numeric(df["Okunan sayaç durumu"], errors="coerce")
-            df = df.dropna(subset=["Okunan sayaç durumu"])
+        if 'zip_buffer_el31' in locals() and zip_buffer_el31 is not None:
+            import tempfile
+            import shutil
+            temp_folder = tempfile.mkdtemp()
 
-            for tesisat, group in df.groupby("Tesisat"):
-                p_values = group[group["Endeks türü"] == "P"]["Okunan sayaç durumu"].dropna().tolist()
-                if not p_values:
-                    continue
+            try:
+                with zipfile.ZipFile(zip_buffer_el31, 'r') as zip_ref:
+                    zip_ref.extractall(temp_folder)
 
-                p_values_nonzero = [val for val in p_values if val > 0]
-                if len(p_values_nonzero) > 0:
-                    p_avg = sum(p_values_nonzero) / len(p_values_nonzero)
-                    esik_deger = p_avg * (1 - esik_orani / 100)
+                for file_name in os.listdir(temp_folder):
+                    if file_name.endswith(".csv"):
+                        file_path = os.path.join(temp_folder, file_name)
+                        try:
+                            df = pd.read_csv(file_path, delimiter=";", encoding="utf-8")
+                            if "Okunan sayaç durumu" in df.columns and "Endeks türü" in df.columns:
+                                p_analizi(df, decrease_percentage_p, decrease_count_p)
+                            else:
+                                st.warning(f"{file_name} beklenen sütunları içermiyor.")
+                        except Exception as e:
+                            st.warning(f"{file_name} okunamadı: {e}")
+                shutil.rmtree(temp_folder)  # temp klasörü temizle
+            except Exception as e:
+                st.error(f"ZIP dosyası okunurken hata oluştu: {e}")
+        else:
+            st.warning("EL31 verileri ZIP'e dönüştürülmemiş veya tanımlı değil.")
 
-                    below_threshold_count = sum(1 for val in p_values_nonzero if val < esik_deger)
 
-                    if below_threshold_count > alt_esik_sayisi:
-                        if tesisat in combined_results:
-                            combined_results[tesisat].append("P")
-                        else:
-                            combined_results[tesisat] = ["P"]
 
-        p_analizi(df_el31, decrease_percentage_p, decrease_count_p)
+
+
+
+    
 
     # **T Analizleri Seçildiyse Çalıştır**
     if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]):
@@ -557,45 +621,139 @@ if st.session_state.analysis_results is not None:
 
 
 
+# MEVSİM ANALİZİ
 
 
-
-
-
-
-col1 = st.columns(1)[0]  # Tek sütun kullan
+col1 = st.columns(1)[0]
 
 with col1:
     seasonal_analysis_enabled = st.checkbox("### **Mevsimsel Dönem Analizi**", key="seasonal_analysis")
 
 if seasonal_analysis_enabled:
     decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
+    run_q_analysis = st.button("🚀 Q Analizini Gerçekleştir")
+
+    if run_q_analysis:
+        df = st.session_state.get("df_zdm240_cleaned", None)
+        supheli_df = st.session_state.get("analysis_results", None)
+
+        if df is not None and supheli_df is not None:
+            st.markdown("### 📉 Mevsimsel (Q) Analizi Sonuçları")
+
+            try:
+                df = df.copy()
+                supheli_tesisatlar = set(supheli_df["Şüpheli Tesisat"].astype(str))
+                df = df[df["Tesisat"].astype(str).isin(supheli_tesisatlar)]
+
+                quarters = {
+                    "Q1": ["Tük_Ocak", "Tük_Şubat", "Tük_Mart"],
+                    "Q2": ["Tük_Nisan", "Tük_Mayıs", "Tük_Haziran"],
+                    "Q3": ["Tük_Temmuz", "Tük_Ağustos", "Tük_Eylül"],
+                    "Q4": ["Tük_Ekim", "Tük_Kasım", "Tük_Aralık"],
+                }
+
+                df.iloc[:, 2:] = df.iloc[:, 2:].replace('[^0-9,\.]', '', regex=True)
+                df.iloc[:, 2:] = df.iloc[:, 2:].replace(',', '.', regex=True).astype(float)
+
+                df_sorted = df.sort_values(by=["Mali yıl"], ascending=False)
+                latest_years = df_sorted.groupby("Tesisat")["Mali yıl"].first().to_dict()
+
+                for tesisat, latest_year in latest_years.items():
+                    mask = (df["Tesisat"] == tesisat) & (df["Mali yıl"] == latest_year)
+                    months = quarters["Q4"][::-1] + quarters["Q3"][::-1] + quarters["Q2"][::-1] + quarters["Q1"][::-1]
+                    zero_found = False
+                    for month in months:
+                        if df.loc[mask, month].values[0] == 0 and not zero_found:
+                            df.loc[mask, month] = None
+                        else:
+                            zero_found = True
+
+                for quarter, months in quarters.items():
+                    df[quarter] = df[months].sum(axis=1, min_count=len(months))
+                    df.loc[df[months].isnull().any(axis=1), quarter] = None
+
+                for quarter in quarters.keys():
+                    df[f"fark_{quarter}"] = df.groupby("Tesisat")[quarter].pct_change()
+
+                q_threshold = decrease_percentage_q / -100.0
+                supheli_q = {}
+
+                for index, row in df.iterrows():
+                    for quarter in quarters.keys():
+                        fark_q = row[f"fark_{quarter}"]
+                        if pd.notnull(fark_q) and fark_q <= q_threshold:
+                            if row["Tesisat"] not in supheli_q:
+                                supheli_q[row["Tesisat"]] = []
+                            supheli_q[row["Tesisat"]].append(f"{int(row['Mali yıl'])}_fark_{quarter}")
+
+                if supheli_q:
+                    df_supheli_q = pd.DataFrame([(k, ", ".join(v)) for k, v in supheli_q.items()],
+                                                columns=["Tesisat", "Şüpheli Dönemler"])
+                    st.session_state.q_analysis_results = df_supheli_q
+                    st.success(f"✅ Q Analizi tamamlandı! Toplam {len(df_supheli_q)} tesisat bulundu.")
+                    st.dataframe(df_supheli_q)
+
+                    st.download_button(
+                        "📥 Mevsimsel Şüpheli Tesisatları İndir",
+                        df_supheli_q.to_csv(sep=";", index=False).encode("utf-8"),
+                        file_name="mevsimsel_supheli.csv",
+                        mime="text/csv"
+                    )
+                else:
+                    st.warning("⚠️ Q analizine göre şüpheli tesisat bulunamadı.")
+
+            except Exception as e:
+                st.error(f"⚠️ Q Analizi sırasında hata oluştu: {e}")
+        else:
+            st.warning("⚠️ Analiz için gerekli veriler mevcut değil. Lütfen önce dosyayı yükleyin ve şüpheli tesisatları analiz edin.")
 
 
 
 
 
-#BURAYA Q ANALİZİ GELECEK!!!!!!!
 
 
 
+# 5. TESİSAT SIRALAMA
 
 
 
-
-
-
-
-# 📌 **Tesisatları Öncelik Sırasına Göre Sırala Butonu**
+# 📌 Tesisat Öncelik Sıralaması
 st.header("⚡ Tesisat Öncelik Sıralaması")
 
 if st.button("📊 **Tesisatları Sırala**"):
 
-    # **P ve T analizleri sonucunda bulunan şüpheli tesisatlar**
-    if st.session_state.analysis_results is None or st.session_state.analysis_results.empty:
+    # Varsayılan: None
+    aktif_analiz = None
+
+    # Öncelik: Q (mevsimsel) analizi yapılmışsa onu kullan
+    if "q_analysis_results" in st.session_state and st.session_state.q_analysis_results is not None:
+        if not st.session_state.q_analysis_results.empty:
+            aktif_analiz = st.session_state.q_analysis_results
+            st.info("ℹ️ Mevsimsel analiz (Q) sonuçları sıralamaya dahil edildi.")
+    
+    # Q yoksa, P/T analizini kullan
+    if aktif_analiz is None:
+        if "analysis_results" in st.session_state and st.session_state.analysis_results is not None:
+            if not st.session_state.analysis_results.empty:
+                aktif_analiz = st.session_state.analysis_results
+                st.info("ℹ️ Sadece P ve T analiz sonuçları sıralamaya dahil edildi.")
+    
+    # Eğer hala analiz bulunamadıysa
+    if aktif_analiz is None:
         st.warning("⚠️ Henüz analiz yapılmadı veya şüpheli tesisat bulunamadı!")
+    
     else:
-        supheli_tesisatlar = st.session_state.analysis_results["Şüpheli Tesisat"].tolist()
+        # Sıralama yapılacak tesisatlar
+        supheli_tesisatlar = aktif_analiz["Tesisat" if "Tesisat" in aktif_analiz.columns else "Şüpheli Tesisat"].tolist()
+
+        # ⬇️ Buraya senin sıralama mantığın entegre edilecek
+        st.write("🔢 Şüpheli tesisatlar sıralamaya hazır:")
+        st.dataframe(pd.DataFrame(supheli_tesisatlar, columns=["Tesisat"]))
+
+
+
+        
 
         # 📌 **Gerekli CSV Dosyalarını Yükle**
         sektor_list = pd.read_csv(st.session_state["uploaded_files"]["Sektör Listesi"], dtype=str, delimiter=';')
@@ -605,44 +763,75 @@ if st.button("📊 **Tesisatları Sırala**"):
         bogaz_list = pd.read_csv(st.session_state["uploaded_files"]["Boğaz Mahalle Listesi"], dtype=str, delimiter=';')
         karadeniz_list = pd.read_csv(st.session_state["uploaded_files"]["Karadeniz Mahalle Listesi"], dtype=str, delimiter=';')
         sube_kablo_list = pd.read_csv(st.session_state["uploaded_files"]["Şube Kablo Değişme Listesi"], dtype=str, delimiter=';')
+
+        sektor_puan_list = pd.read_csv(st.session_state["uploaded_files"]["Sektör Puan Listesi"], dtype=str, delimiter=';')
+        carpan_puan_list = pd.read_csv(st.session_state["uploaded_files"]["Çarpan Puan Listesi"], dtype=str, delimiter=';')
         mahalle_puan_list = pd.read_csv(st.session_state["uploaded_files"]["Mahalle Puan Listesi"], dtype=str, delimiter=';')
+        sube_kablo_puan_list = pd.read_csv(st.session_state["uploaded_files"]["Şube Kablo Değişme Puan Listesi"], dtype=str, delimiter=';')
 
         # 📌 **Ağırlık Değerlerini Al**
         sektor_weight = st.session_state["weights"]["Sektör Puanı Ağırlığı"]
         carpan_weight = st.session_state["weights"]["Çarpan Puanı Ağırlığı"]
         mahalle_weight = st.session_state["weights"]["Mahalle Puanı Ağırlığı"]
         sube_kablo_weight = st.session_state["weights"]["Şube Kablo Puanı Ağırlığı"]
-
-    
-
         
         # 📌 **Verileri Sözlüklere Dönüştürme**
-        sektor_dict = dict(zip(sektor_list['Tesisat'], sektor_list['Nace Kodu']))
-        carpan_dict = dict(zip(carpan_list['Tesisat'], carpan_list['Tahakkuk faktörü']))
-        sube_kablo_dict = dict(zip(sube_kablo_list['Tesisat'], sube_kablo_list['Kablo']))
+        sektor_list['Tesisat'] = sektor_list['Tesisat'].astype(str).str.strip()
+        sektor_list['Nace Kodu'] = sektor_list['Nace Kodu'].astype(str).str.strip()
+        sektor_list_dict = dict(zip(sektor_list['Tesisat'], sektor_list['Nace Kodu']))
+        
+        carpan_list['Tesisat'] = carpan_list['Tesisat'].astype(str).str.strip()
+        carpan_list['Tahakkuk faktörü'] = carpan_list['Tahakkuk faktörü'].astype(str).str.strip()
+        carpan_list_dict = dict(zip(carpan_list['Tesisat'], carpan_list['Tahakkuk faktörü']))
+        
+        sube_kablo_list['Tesisat'] = sube_kablo_list['Tesisat'].astype(str).str.strip()
+        sube_kablo_list['Kablo'] = sube_kablo_list['Kablo'].astype(str).str.strip()
+        sube_kablo_list_dict = dict(zip(sube_kablo_list['Tesisat'], sube_kablo_list['Kablo']))
+        
+        # Mahalle listeleri
+        
+
 
         # 📌 **Mahalle Eşleşmesi**
-        mahalle_tesisat_dict = {}
-        for df, mahalle_adi in zip([mahalle1_list, mahalle2_list, bogaz_list, karadeniz_list],
-                                   ["Marmara 1", "Marmara 2", "Boğaz", "Karadeniz"]):
+        mahalle_list_dict = {}
+        for df in [mahalle1_list, mahalle2_list, bogaz_list, karadeniz_list]:
+            df['Tesisat'] = df['Tesisat'].astype(str).str.strip()
+            df['Mahalle'] = df['Mahalle'].astype(str).str.strip()
             for _, row in df.iterrows():
-                mahalle_tesisat_dict[row['Tesisat']] = row['Mahalle']
+                mahalle_list_dict[row['Tesisat']] = row['Mahalle']
 
-        # 📌 **Mahalle Puanları**
+        # 📌 ** Puanlar**
+        sektor_puan_list['Nace Kodu'] = sektor_puan_list['Nace Kodu'].astype(str).str.strip()
+        sektor_puan_list['Puan'] = sektor_puan_list['Puan'].astype(str).str.replace(",", ".")
+        sektor_puan_dict = dict(zip(sektor_puan_list['Nace Kodu'], sektor_puan_list['Puan']))
+        
+        carpan_puan_list['Tahakkuk faktörü'] = carpan_puan_list['Tahakkuk faktörü'].astype(str).str.strip()
+        carpan_puan_list['Puan'] = carpan_puan_list['Puan'].astype(str).str.replace(",", ".")
+        carpan_puan_dict = dict(zip(carpan_puan_list['Tahakkuk faktörü'], carpan_puan_list['Puan']))
+        
+        sube_kablo_puan_list['Kablo'] = sube_kablo_puan_list['Kablo'].astype(str).str.strip()
+        sube_kablo_puan_list['Puan'] = sube_kablo_puan_list['Puan'].astype(str).str.replace(",", ".")
+        sube_kablo_puan_dict = dict(zip(sube_kablo_puan_list['Kablo'], sube_kablo_puan_list['Puan']))
+        
+        mahalle_puan_list['Mahalle'] = mahalle_puan_list['Mahalle'].astype(str).str.strip()
+        mahalle_puan_list['Puan'] = mahalle_puan_list['Puan'].astype(str).str.replace(",", ".")
         mahalle_puan_dict = dict(zip(mahalle_puan_list['Mahalle'], mahalle_puan_list['Puan']))
+
+
+        supheli_tesisatlar = [str(t).strip() for t in st.session_state.analysis_results["Şüpheli Tesisat"].tolist()]
 
         # 📌 **Şüpheli Tesisatları Puanlama**
         results = []
         for tesisat in supheli_tesisatlar:
-            nace_kodu = sektor_dict.get(tesisat, None)
-            tahakkuk_faktoru = carpan_dict.get(tesisat, None)
-            kablo = sube_kablo_dict.get(tesisat, None)
-            mahalle_adi = mahalle_tesisat_dict.get(tesisat, None)
+            nace_kodu = sektor_list_dict.get(tesisat, None)
+            tahakkuk_faktoru = carpan_list_dict.get(tesisat, None)
+            kablo = sube_kablo_list_dict.get(tesisat, None)
+            mahalle_adi = mahalle_list_dict.get(tesisat, None)
 
             mahalle_puan = float(mahalle_puan_dict.get(mahalle_adi, "0").replace(',', '.')) if mahalle_adi else 0
-            sektor_puan = float(sektor_dict.get(nace_kodu, "0").replace(',', '.')) if nace_kodu else 0
-            carpan_puan = float(carpan_dict.get(tahakkuk_faktoru, "0").replace(',', '.')) if tahakkuk_faktoru else 0
-            sube_kablo_puan = float(sube_kablo_dict.get(kablo, "0").replace(',', '.')) if kablo else 0
+            sektor_puan = float(sektor_puan_dict.get(nace_kodu, "0").replace(',', '.')) if nace_kodu else 0
+            carpan_puan = float(carpan_puan_dict.get(tahakkuk_faktoru, "0").replace(',', '.')) if tahakkuk_faktoru else 0
+            sube_kablo_puan = float(sube_kablo_puan_dict.get(kablo, "0").replace(',', '.')) if kablo else 0
 
             toplam_puan = (
                 (sektor_puan * sektor_weight) +
@@ -652,6 +841,8 @@ if st.button("📊 **Tesisatları Sırala**"):
             )
 
             results.append([tesisat, toplam_puan])
+
+         
 
         # 📌 **Sonuçları Sırala ve Göster**
         df_sorted = pd.DataFrame(results, columns=['Tesisat', 'Puan']).sort_values(by="Puan", ascending=False)
