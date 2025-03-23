@@ -530,95 +530,90 @@ if st.session_state.analysis_results is not None:
 # MEVSİM ANALİZİ
 
 
-col1 = st.columns(1)[0]  # Tek sütun kullan
+col1 = st.columns(1)[0]
 
 with col1:
     seasonal_analysis_enabled = st.checkbox("### **Mevsimsel Dönem Analizi**", key="seasonal_analysis")
-
-
-
 
 if seasonal_analysis_enabled:
     decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
     run_q_analysis = st.button("🚀 Q Analizini Gerçekleştir")
 
-    # ✅ Q Analizi (Mevsimsel)
-    if run_q_analysis and "df_zdm240_cleaned" in locals() and st.session_state.analysis_results is not None:
-        st.markdown("### 📉 Mevsimsel (Q) Analizi Sonuçları")
+    if run_q_analysis:
+        df = st.session_state.get("df_zdm240_cleaned", None)
+        supheli_df = st.session_state.get("analysis_results", None)
 
-        try:
-            df = df_zdm240_cleaned.copy()
-            supheli_df = st.session_state.analysis_results
+        if df is not None and supheli_df is not None:
+            st.markdown("### 📉 Mevsimsel (Q) Analizi Sonuçları")
 
-            # Şüpheli tesisatları filtrele
-            supheli_tesisatlar = set(supheli_df["Şüpheli Tesisat"].astype(str))
-            df = df[df["Tesisat"].astype(str).isin(supheli_tesisatlar)]
+            try:
+                df = df.copy()
+                supheli_tesisatlar = set(supheli_df["Şüpheli Tesisat"].astype(str))
+                df = df[df["Tesisat"].astype(str).isin(supheli_tesisatlar)]
 
-            # Çeyrek ay tanımları
-            quarters = {
-                "Q1": ["Tük_Ocak", "Tük_Şubat", "Tük_Mart"],
-                "Q2": ["Tük_Nisan", "Tük_Mayıs", "Tük_Haziran"],
-                "Q3": ["Tük_Temmuz", "Tük_Ağustos", "Tük_Eylül"],
-                "Q4": ["Tük_Ekim", "Tük_Kasım", "Tük_Aralık"],
-            }
+                quarters = {
+                    "Q1": ["Tük_Ocak", "Tük_Şubat", "Tük_Mart"],
+                    "Q2": ["Tük_Nisan", "Tük_Mayıs", "Tük_Haziran"],
+                    "Q3": ["Tük_Temmuz", "Tük_Ağustos", "Tük_Eylül"],
+                    "Q4": ["Tük_Ekim", "Tük_Kasım", "Tük_Aralık"],
+                }
 
-            # Sayısal verileri float'a çevir
-            df.iloc[:, 2:] = df.iloc[:, 2:].replace('[^0-9,\.]', '', regex=True)  # Sayısal olmayan karakter temizliği
-            df.iloc[:, 2:] = df.iloc[:, 2:].replace(',', '.', regex=True).astype(float)
+                df.iloc[:, 2:] = df.iloc[:, 2:].replace('[^0-9,\.]', '', regex=True)
+                df.iloc[:, 2:] = df.iloc[:, 2:].replace(',', '.', regex=True).astype(float)
 
-            # En güncel yıl belirleme ve sıfırları NaN yapma
-            df_sorted = df.sort_values(by=["Mali yıl"], ascending=False)
-            latest_years = df_sorted.groupby("Tesisat")["Mali yıl"].first().to_dict()
+                df_sorted = df.sort_values(by=["Mali yıl"], ascending=False)
+                latest_years = df_sorted.groupby("Tesisat")["Mali yıl"].first().to_dict()
 
-            for tesisat, latest_year in latest_years.items():
-                mask = (df["Tesisat"] == tesisat) & (df["Mali yıl"] == latest_year)
-                months = quarters["Q4"][::-1] + quarters["Q3"][::-1] + quarters["Q2"][::-1] + quarters["Q1"][::-1]
-                zero_found = False
-                for month in months:
-                    if df.loc[mask, month].values[0] == 0 and not zero_found:
-                        df.loc[mask, month] = None
-                    else:
-                        zero_found = True
+                for tesisat, latest_year in latest_years.items():
+                    mask = (df["Tesisat"] == tesisat) & (df["Mali yıl"] == latest_year)
+                    months = quarters["Q4"][::-1] + quarters["Q3"][::-1] + quarters["Q2"][::-1] + quarters["Q1"][::-1]
+                    zero_found = False
+                    for month in months:
+                        if df.loc[mask, month].values[0] == 0 and not zero_found:
+                            df.loc[mask, month] = None
+                        else:
+                            zero_found = True
 
-            # Çeyrek toplamları
-            for quarter, months in quarters.items():
-                df[quarter] = df[months].sum(axis=1, min_count=len(months))
-                df.loc[df[months].isnull().any(axis=1), quarter] = None
+                for quarter, months in quarters.items():
+                    df[quarter] = df[months].sum(axis=1, min_count=len(months))
+                    df.loc[df[months].isnull().any(axis=1), quarter] = None
 
-            # Yüzde fark hesapla
-            for quarter in quarters.keys():
-                df[f"fark_{quarter}"] = df.groupby("Tesisat")[quarter].pct_change()
-
-            # Eşik değeri (Streamlit'ten)
-            q_threshold = decrease_percentage_q / -100.0  # Örn: %30 → -0.3
-            supheli_q = {}
-
-            for index, row in df.iterrows():
                 for quarter in quarters.keys():
-                    fark_q = row[f"fark_{quarter}"]
-                    if pd.notnull(fark_q) and fark_q <= q_threshold:
-                        if row["Tesisat"] not in supheli_q:
-                            supheli_q[row["Tesisat"]] = []
-                        supheli_q[row["Tesisat"]].append(f"{int(row['Mali yıl'])}_fark_{quarter}")
+                    df[f"fark_{quarter}"] = df.groupby("Tesisat")[quarter].pct_change()
 
-            if supheli_q:
-                df_supheli_q = pd.DataFrame([(k, ", ".join(v)) for k, v in supheli_q.items()],
-                                            columns=["Tesisat", "Şüpheli Dönemler"])
-                st.session_state.q_analysis_results = df_supheli_q
-                st.success(f"✅ Q Analizi tamamlandı! Toplam {len(df_supheli_q)} tesisat bulundu.")
-                st.dataframe(df_supheli_q)
+                q_threshold = decrease_percentage_q / -100.0
+                supheli_q = {}
 
-                st.download_button(
-                    "📥 Mevsimsel Şüpheli Tesisatları İndir",
-                    df_supheli_q.to_csv(sep=";", index=False).encode("utf-8"),
-                    file_name="mevsimsel_supheli.csv",
-                    mime="text/csv"
-                )
-            else:
-                st.warning("⚠️ Q analizine göre şüpheli tesisat bulunamadı.")
+                for index, row in df.iterrows():
+                    for quarter in quarters.keys():
+                        fark_q = row[f"fark_{quarter}"]
+                        if pd.notnull(fark_q) and fark_q <= q_threshold:
+                            if row["Tesisat"] not in supheli_q:
+                                supheli_q[row["Tesisat"]] = []
+                            supheli_q[row["Tesisat"]].append(f"{int(row['Mali yıl'])}_fark_{quarter}")
 
-        except Exception as e:
-            st.error(f"⚠️ Q Analizi sırasında hata oluştu: {e}")
+                if supheli_q:
+                    df_supheli_q = pd.DataFrame([(k, ", ".join(v)) for k, v in supheli_q.items()],
+                                                columns=["Tesisat", "Şüpheli Dönemler"])
+                    st.session_state.q_analysis_results = df_supheli_q
+                    st.success(f"✅ Q Analizi tamamlandı! Toplam {len(df_supheli_q)} tesisat bulundu.")
+                    st.dataframe(df_supheli_q)
+
+                    st.download_button(
+                        "📥 Mevsimsel Şüpheli Tesisatları İndir",
+                        df_supheli_q.to_csv(sep=";", index=False).encode("utf-8"),
+                        file_name="mevsimsel_supheli.csv",
+                        mime="text/csv"
+                    )
+                else:
+                    st.warning("⚠️ Q analizine göre şüpheli tesisat bulunamadı.")
+
+            except Exception as e:
+                st.error(f"⚠️ Q Analizi sırasında hata oluştu: {e}")
+        else:
+            st.warning("⚠️ Analiz için gerekli veriler mevcut değil. Lütfen önce dosyayı yükleyin ve şüpheli tesisatları analiz edin.")
+
+
 
 
 # 📌 **Tesisatları Öncelik Sırasına Göre Sırala Butonu**
