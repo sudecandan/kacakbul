@@ -6,8 +6,10 @@ import matplotlib.pyplot as plt
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 import os
 import tempfile
-
 import io
+
+
+st.set_page_config(layout="wide")
 
 # STREAMLIT BAŞLIĞI
 st.title("⚡ KaçakBul") 
@@ -52,14 +54,6 @@ if zdm240_file:
 
 
 
-
-
-
-
-# 1. BÖLÜM: VERİ DÜZENLEME
-
-
-
 # **EL31 VERİLERİNİ DÜZENLEME**
 if el31_file:
 
@@ -83,8 +77,7 @@ if el31_file:
 
     def filter_max_reading(df):
         df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".").astype(float)
-        df = df.sort_values(by=["Tesisat", "Sayaç okuma tarihi", "Okunan sayaç durumu", "Sayaç okuma zamanı"],
-                            ascending=[True, True, False, True])
+        df = df.sort_values(by=["Tesisat", "Sayaç okuma tarihi", "Okunan sayaç durumu"], ascending=[True, True, False])
         return df.groupby(["Tesisat", "Sayaç okuma tarihi"], as_index=False).first()
 
     def remain_last_two(df):
@@ -97,7 +90,7 @@ if el31_file:
     df_el31_cleaned = clean_el31(df_el31)
     df_el31_cleaned = only_p_lines(df_el31_cleaned)
     df_el31_filtered = filter_max_reading(df_el31_cleaned)
-    df_el31_filtered = remain_last_two(df_el31_filtered)
+    df_el31_filtered = remain_last_two(df_el31_filtered)  # ⬅️ ENTEGRASYON BURADA
 
     # 📦 2. ZIP'e yaz
     zip_buffer_el31 = BytesIO()
@@ -120,13 +113,7 @@ if el31_file:
                 csv_data_AB = group.to_csv(sep=";", index=False).encode("utf-8")
                 zipf.writestr(file_name_AB, csv_data_AB)
 
-    zip_buffer_el31.seek(0)
-
-
-
-
-
-
+    zip_buffer_el31.seek(0)  # Analiz için sıfırla
 
 # **ZBLIR_002 VERİLERİNİ DÜZENLEME**
 if zblir_file:
@@ -164,11 +151,7 @@ if zblir_file:
     zip_buffer.seek(0)
 
 
-
-
-
-
-# ZDM240 VERİLERİNİ DÜZENLEME
+# Eğer dosya yüklendiyse işlemlere başla
 if zdm240_file:
     try:
         # Aynı dosyayı birden fazla kez kullanmadan önce imleci başa al
@@ -182,17 +165,12 @@ if zdm240_file:
 
         # Gruplama: 'Tesisat' ve 'Mali yıl' bazında tüketimlerin toplamı
         df_grouped = df_zdm240.groupby(['Tesisat', 'Mali yıl'], as_index=False)[tuk_columns].sum()
-   
-        # 💾 Q analizi için bellekte sakla
-        st.session_state.df_zdm240_cleaned = df_grouped
-        
 
         # CSV çıktısını belleğe yaz
         output = BytesIO()
         df_grouped.to_csv(output, sep=';', index=False, decimal=',')
         output.seek(0)
 
-    
 
     except pd.errors.EmptyDataError:
         st.error("⚠️ Dosya boş görünüyor. Lütfen geçerli bir ZDM240 dosyası yükleyin.")
@@ -200,18 +178,6 @@ if zdm240_file:
         st.error(f"🚨 Bir hata oluştu: {e}")
 
 
-    
-
-
-
-
-
-
-
-
-
-
-# 2. BÖLÜM: ANALİZ
 
 # 📊 Kullanıcıdan analiz için giriş al
 
@@ -243,12 +209,12 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("#### 📉 **P Analizi**")
     decrease_percentage_p = st.number_input("P Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
-    decrease_count_p = st.number_input("P Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=3)
+    decrease_count_p = st.number_input("P Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=2)
 
 with col2:
     st.markdown("#### 📉 **T Analizi**")
-    decrease_percentage_t = st.number_input("T Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=50)
-    decrease_count_t = st.number_input("T Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=5)
+    decrease_percentage_t = st.number_input("T Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=20)
+    decrease_count_t = st.number_input("T Kaç Kez Düşüş?", min_value=1, max_value=10, step=1, value=3)
 
 # **Seçili analizleri belirleme**
 selected_analysis = [key for key, value in st.session_state.selected_analysis.items() if value]
@@ -257,12 +223,10 @@ selected_analysis = [key for key, value in st.session_state.selected_analysis.it
 
 
 
+#BURAYA DÜZENLENMİŞ LİSTELER İÇİN OLUŞTURULAN GRAFİKLER İÇİN OLAN KODLAR GELECEK
 
 
 
-
-
-# 3. GÖMÜLÜ DOSYALAR VE ADMİN
 
 
 # 📌 **Saklanacak dosya yolları**
@@ -412,40 +376,11 @@ if st.session_state["admin_authenticated"]:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 4. ANALİZ
-
-
 # 📌 **Session State ile Analiz Sonuçlarını Kaydet**
 if "analysis_results" not in st.session_state:
     st.session_state.analysis_results = None
 if "selected_tesisat" not in st.session_state:
     st.session_state.selected_tesisat = None  # Kullanıcının seçtiği tesisat numarası
-
-
-
 
 
 # 🚀 Analizi Başlat Butonu
@@ -508,13 +443,6 @@ if st.button("🚀 Analizi Başlat"):
                 st.error(f"ZIP dosyası okunurken hata oluştu: {e}")
         else:
             st.warning("EL31 verileri ZIP'e dönüştürülmemiş veya tanımlı değil.")
-
-
-
-
-
-
-    
 
     # **T Analizleri Seçildiyse Çalıştır**
     if any(t in selected_analysis for t in ["T1 Analizi", "T2 Analizi", "T3 Analizi"]):
@@ -599,155 +527,110 @@ if st.session_state.analysis_results is not None:
     st.dataframe(st.session_state.analysis_results)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # MEVSİM ANALİZİ
 
 
-col1 = st.columns(1)[0]
+col1 = st.columns(1)[0]  # Tek sütun kullan
 
 with col1:
     seasonal_analysis_enabled = st.checkbox("### **Mevsimsel Dönem Analizi**", key="seasonal_analysis")
+
+
+
 
 if seasonal_analysis_enabled:
     decrease_percentage_q = st.number_input("Q Yüzde Kaç Düşüş?", min_value=1, max_value=100, step=1, value=30)
     run_q_analysis = st.button("🚀 Q Analizini Gerçekleştir")
 
-    if run_q_analysis:
-        df = st.session_state.get("df_zdm240_cleaned", None)
-        supheli_df = st.session_state.get("analysis_results", None)
+    # ✅ Q Analizi (Mevsimsel)
+    if run_q_analysis and "df_zdm240_cleaned" in locals() and st.session_state.analysis_results is not None:
+        st.markdown("### 📉 Mevsimsel (Q) Analizi Sonuçları")
 
-        if df is not None and supheli_df is not None:
-            st.markdown("### 📉 Mevsimsel (Q) Analizi Sonuçları")
+        try:
+            df = df_zdm240_cleaned.copy()
+            supheli_df = st.session_state.analysis_results
 
-            try:
-                df = df.copy()
-                supheli_tesisatlar = set(supheli_df["Şüpheli Tesisat"].astype(str))
-                df = df[df["Tesisat"].astype(str).isin(supheli_tesisatlar)]
+            # Şüpheli tesisatları filtrele
+            supheli_tesisatlar = set(supheli_df["Şüpheli Tesisat"].astype(str))
+            df = df[df["Tesisat"].astype(str).isin(supheli_tesisatlar)]
 
-                quarters = {
-                    "Q1": ["Tük_Ocak", "Tük_Şubat", "Tük_Mart"],
-                    "Q2": ["Tük_Nisan", "Tük_Mayıs", "Tük_Haziran"],
-                    "Q3": ["Tük_Temmuz", "Tük_Ağustos", "Tük_Eylül"],
-                    "Q4": ["Tük_Ekim", "Tük_Kasım", "Tük_Aralık"],
-                }
+            # Çeyrek ay tanımları
+            quarters = {
+                "Q1": ["Tük_Ocak", "Tük_Şubat", "Tük_Mart"],
+                "Q2": ["Tük_Nisan", "Tük_Mayıs", "Tük_Haziran"],
+                "Q3": ["Tük_Temmuz", "Tük_Ağustos", "Tük_Eylül"],
+                "Q4": ["Tük_Ekim", "Tük_Kasım", "Tük_Aralık"],
+            }
 
-                df.iloc[:, 2:] = df.iloc[:, 2:].replace('[^0-9,\.]', '', regex=True)
-                df.iloc[:, 2:] = df.iloc[:, 2:].replace(',', '.', regex=True).astype(float)
+            # Sayısal verileri float'a çevir
+            df.iloc[:, 2:] = df.iloc[:, 2:].replace('[^0-9,\.]', '', regex=True)  # Sayısal olmayan karakter temizliği
+            df.iloc[:, 2:] = df.iloc[:, 2:].replace(',', '.', regex=True).astype(float)
 
-                df_sorted = df.sort_values(by=["Mali yıl"], ascending=False)
-                latest_years = df_sorted.groupby("Tesisat")["Mali yıl"].first().to_dict()
+            # En güncel yıl belirleme ve sıfırları NaN yapma
+            df_sorted = df.sort_values(by=["Mali yıl"], ascending=False)
+            latest_years = df_sorted.groupby("Tesisat")["Mali yıl"].first().to_dict()
 
-                for tesisat, latest_year in latest_years.items():
-                    mask = (df["Tesisat"] == tesisat) & (df["Mali yıl"] == latest_year)
-                    months = quarters["Q4"][::-1] + quarters["Q3"][::-1] + quarters["Q2"][::-1] + quarters["Q1"][::-1]
-                    zero_found = False
-                    for month in months:
-                        if df.loc[mask, month].values[0] == 0 and not zero_found:
-                            df.loc[mask, month] = None
-                        else:
-                            zero_found = True
+            for tesisat, latest_year in latest_years.items():
+                mask = (df["Tesisat"] == tesisat) & (df["Mali yıl"] == latest_year)
+                months = quarters["Q4"][::-1] + quarters["Q3"][::-1] + quarters["Q2"][::-1] + quarters["Q1"][::-1]
+                zero_found = False
+                for month in months:
+                    if df.loc[mask, month].values[0] == 0 and not zero_found:
+                        df.loc[mask, month] = None
+                    else:
+                        zero_found = True
 
-                for quarter, months in quarters.items():
-                    df[quarter] = df[months].sum(axis=1, min_count=len(months))
-                    df.loc[df[months].isnull().any(axis=1), quarter] = None
+            # Çeyrek toplamları
+            for quarter, months in quarters.items():
+                df[quarter] = df[months].sum(axis=1, min_count=len(months))
+                df.loc[df[months].isnull().any(axis=1), quarter] = None
 
+            # Yüzde fark hesapla
+            for quarter in quarters.keys():
+                df[f"fark_{quarter}"] = df.groupby("Tesisat")[quarter].pct_change()
+
+            # Eşik değeri (Streamlit'ten)
+            q_threshold = decrease_percentage_q / -100.0  # Örn: %30 → -0.3
+            supheli_q = {}
+
+            for index, row in df.iterrows():
                 for quarter in quarters.keys():
-                    df[f"fark_{quarter}"] = df.groupby("Tesisat")[quarter].pct_change()
+                    fark_q = row[f"fark_{quarter}"]
+                    if pd.notnull(fark_q) and fark_q <= q_threshold:
+                        if row["Tesisat"] not in supheli_q:
+                            supheli_q[row["Tesisat"]] = []
+                        supheli_q[row["Tesisat"]].append(f"{int(row['Mali yıl'])}_fark_{quarter}")
 
-                q_threshold = decrease_percentage_q / -100.0
-                supheli_q = {}
+            if supheli_q:
+                df_supheli_q = pd.DataFrame([(k, ", ".join(v)) for k, v in supheli_q.items()],
+                                            columns=["Tesisat", "Şüpheli Dönemler"])
+                st.session_state.q_analysis_results = df_supheli_q
+                st.success(f"✅ Q Analizi tamamlandı! Toplam {len(df_supheli_q)} tesisat bulundu.")
+                st.dataframe(df_supheli_q)
 
-                for index, row in df.iterrows():
-                    for quarter in quarters.keys():
-                        fark_q = row[f"fark_{quarter}"]
-                        if pd.notnull(fark_q) and fark_q <= q_threshold:
-                            if row["Tesisat"] not in supheli_q:
-                                supheli_q[row["Tesisat"]] = []
-                            supheli_q[row["Tesisat"]].append(f"{int(row['Mali yıl'])}_fark_{quarter}")
+                st.download_button(
+                    "📥 Mevsimsel Şüpheli Tesisatları İndir",
+                    df_supheli_q.to_csv(sep=";", index=False).encode("utf-8"),
+                    file_name="mevsimsel_supheli.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.warning("⚠️ Q analizine göre şüpheli tesisat bulunamadı.")
 
-                if supheli_q:
-                    df_supheli_q = pd.DataFrame([(k, ", ".join(v)) for k, v in supheli_q.items()],
-                                                columns=["Tesisat", "Şüpheli Dönemler"])
-                    st.session_state.q_analysis_results = df_supheli_q
-                    st.success(f"✅ Q Analizi tamamlandı! Toplam {len(df_supheli_q)} tesisat bulundu.")
-                    st.dataframe(df_supheli_q)
-
-                    st.download_button(
-                        "📥 Mevsimsel Şüpheli Tesisatları İndir",
-                        df_supheli_q.to_csv(sep=";", index=False).encode("utf-8"),
-                        file_name="mevsimsel_supheli.csv",
-                        mime="text/csv"
-                    )
-                else:
-                    st.warning("⚠️ Q analizine göre şüpheli tesisat bulunamadı.")
-
-            except Exception as e:
-                st.error(f"⚠️ Q Analizi sırasında hata oluştu: {e}")
-        else:
-            st.warning("⚠️ Analiz için gerekli veriler mevcut değil. Lütfen önce dosyayı yükleyin ve şüpheli tesisatları analiz edin.")
+        except Exception as e:
+            st.error(f"⚠️ Q Analizi sırasında hata oluştu: {e}")
 
 
+# 📌 **Tesisatları Öncelik Sırasına Göre Sırala Butonu**
+st.header(" 🔍 Tesisat Öncelik Sıralaması")
 
+if st.button("**Tesisatları Sırala**"):
 
-
-
-
-
-# 5. TESİSAT SIRALAMA
-
-
-
-# 📌 Tesisat Öncelik Sıralaması
-st.header("⚡ Tesisat Öncelik Sıralaması")
-
-if st.button("📊 **Tesisatları Sırala**"):
-
-    # Varsayılan: None
-    aktif_analiz = None
-
-    # Öncelik: Q (mevsimsel) analizi yapılmışsa onu kullan
-    if "q_analysis_results" in st.session_state and st.session_state.q_analysis_results is not None:
-        if not st.session_state.q_analysis_results.empty:
-            aktif_analiz = st.session_state.q_analysis_results
-    
-    # Q yoksa, P/T analizini kullan
-    if aktif_analiz is None:
-        if "analysis_results" in st.session_state and st.session_state.analysis_results is not None:
-            if not st.session_state.analysis_results.empty:
-                aktif_analiz = st.session_state.analysis_results
-    
-    # Eğer hala analiz bulunamadıysa
-    if aktif_analiz is None:
+    # **P ve T analizleri sonucunda bulunan şüpheli tesisatlar**
+    if st.session_state.analysis_results is None or st.session_state.analysis_results.empty:
         st.warning("⚠️ Henüz analiz yapılmadı veya şüpheli tesisat bulunamadı!")
-    
     else:
-        # Sıralama yapılacak tesisatlar
-        supheli_tesisatlar = aktif_analiz["Tesisat" if "Tesisat" in aktif_analiz.columns else "Şüpheli Tesisat"].tolist()
-
-
-        
+        supheli_tesisatlar = st.session_state.analysis_results["Şüpheli Tesisat"].tolist()
 
         # 📌 **Gerekli CSV Dosyalarını Yükle**
         sektor_list = pd.read_csv(st.session_state["uploaded_files"]["Sektör Listesi"], dtype=str, delimiter=';')
@@ -812,11 +695,7 @@ if st.button("📊 **Tesisatları Sırala**"):
         mahalle_puan_dict = dict(zip(mahalle_puan_list['Mahalle'], mahalle_puan_list['Puan']))
 
 
-        supheli_tesisatlar_raw = aktif_analiz["Tesisat" if "Tesisat" in aktif_analiz.columns else "Şüpheli Tesisat"]
-        supheli_tesisatlar = [str(int(float(t))) for t in supheli_tesisatlar_raw]
-
-
-
+        supheli_tesisatlar = [str(t).strip() for t in st.session_state.analysis_results["Şüpheli Tesisat"].tolist()]
 
         # 📌 **Şüpheli Tesisatları Puanlama**
         results = []
@@ -840,8 +719,6 @@ if st.button("📊 **Tesisatları Sırala**"):
 
             results.append([tesisat, toplam_puan])
 
-         
-
         # 📌 **Sonuçları Sırala ve Göster**
         df_sorted = pd.DataFrame(results, columns=['Tesisat', 'Puan']).sort_values(by="Puan", ascending=False)
         
@@ -853,3 +730,4 @@ if st.button("📊 **Tesisatları Sırala**"):
                            df_sorted.to_csv(sep=";", index=False).encode("utf-8"),
                            "supheli_tesisatlar_sirali.csv",
                            "text/csv")
+ 
