@@ -83,7 +83,8 @@ if el31_file:
 
     def filter_max_reading(df):
         df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".").astype(float)
-        df = df.sort_values(by=["Tesisat", "Sayaç okuma tarihi", "Okunan sayaç durumu"], ascending=[True, True, False])
+        df = df.sort_values(by=["Tesisat", "Sayaç okuma tarihi", "Okunan sayaç durumu", "Sayaç okuma zamanı"],
+                            ascending=[True, True, False, True])
         return df.groupby(["Tesisat", "Sayaç okuma tarihi"], as_index=False).first()
 
     def remain_last_two(df):
@@ -96,7 +97,7 @@ if el31_file:
     df_el31_cleaned = clean_el31(df_el31)
     df_el31_cleaned = only_p_lines(df_el31_cleaned)
     df_el31_filtered = filter_max_reading(df_el31_cleaned)
-    df_el31_filtered = remain_last_two(df_el31_filtered)  # ⬅️ ENTEGRASYON BURADA
+    df_el31_filtered = remain_last_two(df_el31_filtered)
 
     # 📦 2. ZIP'e yaz
     zip_buffer_el31 = BytesIO()
@@ -119,7 +120,7 @@ if el31_file:
                 csv_data_AB = group.to_csv(sep=";", index=False).encode("utf-8")
                 zipf.writestr(file_name_AB, csv_data_AB)
 
-    zip_buffer_el31.seek(0)  # Analiz için sıfırla
+    zip_buffer_el31.seek(0)
 
 
 
@@ -747,11 +748,6 @@ if st.button("📊 **Tesisatları Sırala**"):
         # Sıralama yapılacak tesisatlar
         supheli_tesisatlar = aktif_analiz["Tesisat" if "Tesisat" in aktif_analiz.columns else "Şüpheli Tesisat"].tolist()
 
-        # ⬇️ Buraya senin sıralama mantığın entegre edilecek
-        st.write("🔢 Şüpheli tesisatlar sıralamaya hazır:")
-        st.dataframe(pd.DataFrame(supheli_tesisatlar, columns=["Tesisat"]))
-
-
 
         
 
@@ -818,7 +814,11 @@ if st.button("📊 **Tesisatları Sırala**"):
         mahalle_puan_dict = dict(zip(mahalle_puan_list['Mahalle'], mahalle_puan_list['Puan']))
 
 
-        supheli_tesisatlar = [str(t).strip() for t in st.session_state.analysis_results["Şüpheli Tesisat"].tolist()]
+        supheli_tesisatlar_raw = aktif_analiz["Tesisat" if "Tesisat" in aktif_analiz.columns else "Şüpheli Tesisat"]
+        supheli_tesisatlar = [str(int(float(t))) for t in supheli_tesisatlar_raw]
+
+
+
 
         # 📌 **Şüpheli Tesisatları Puanlama**
         results = []
