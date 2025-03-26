@@ -184,6 +184,168 @@ if zdm240_file:
 
 
 
+# 🔹 Grafik: EL31 (P Endeksi)
+def plot_el31_graph(df):
+    df["Sayaç okuma tarihi"] = pd.to_datetime(df["Sayaç okuma tarihi"], format="%Y-%m-%d", errors='coerce')
+    df = df.sort_values("Sayaç okuma tarihi")
+    df["Okunan sayaç durumu"] = df["Okunan sayaç durumu"].astype(str).str.replace(",", ".").astype(float)
+
+    avg_value = df[df["Okunan sayaç durumu"] > 0]["Okunan sayaç durumu"].mean()
+
+    fig, ax = plt.subplots()
+    ax.plot(df["Sayaç okuma tarihi"], df["Okunan sayaç durumu"], marker='o', label='Okunan Sayaç Durumu')
+
+    # Muhatap değişim tarihi
+    if "Muhatap adı" in df.columns:
+        unique_names = df["Muhatap adı"].unique()
+        if len(unique_names) > 1:
+            name_changes = df["Muhatap adı"].ne(df["Muhatap adı"].shift())
+            change_dates = df.loc[name_changes, "Sayaç okuma tarihi"]
+            if len(change_dates) > 1:
+                change_date = change_dates.iloc[1]
+                ax.axvline(change_date, color='purple', linestyle=':', label=f'Muhatap Değişim: {change_date.date()}')
+
+    ax.axhline(avg_value, color='red', linestyle='--', label=f'Ortalama: {avg_value:.2f}')
+    ax.set_xlabel("Sayaç Okuma Tarihi")
+    ax.set_ylabel("Okunan Sayaç Durumu")
+    ax.set_title("P Endeksi Grafiği")
+    ax.legend()
+    ax.grid(True, which='both', linestyle='--', linewidth=0.5, color='lightgray')
+    fig.tight_layout()
+    return fig
+
+
+
+
+def plot_zblir_graph(df, endeks):
+    df = df[df["Endeks Türü"].str.lower() == endeks.lower()]
+    df["Son Okuma Tarihi"] = pd.to_datetime(df["Son Okuma Tarihi"], format="%Y-%m-%d", errors='coerce')
+    df["Ortalama Tüketim"] = df["Ortalama Tüketim"].astype(str).str.replace(",", ".").astype(float)
+    df = df.dropna(subset=["Son Okuma Tarihi", "Ortalama Tüketim"])
+
+    avg_value = df[df["Ortalama Tüketim"] > 0]["Ortalama Tüketim"].mean()
+
+    fig, ax = plt.subplots()
+    ax.plot(df["Son Okuma Tarihi"], df["Ortalama Tüketim"], marker='o', label='Ortalama Tüketim')
+
+    if "Muhatap Adı" in df.columns:
+        unique_names = df["Muhatap Adı"].unique()
+        if len(unique_names) > 1:
+            name_changes = df["Muhatap Adı"].ne(df["Muhatap Adı"].shift())
+            change_dates = df.loc[name_changes, "Son Okuma Tarihi"]
+            if len(change_dates) > 1:
+                change_date = change_dates.iloc[1]
+                ax.axvline(change_date, color='purple', linestyle=':', label=f'Muhatap Değişim: {change_date.date()}')
+
+    ax.axhline(avg_value, color='green', linestyle='--', label=f'Ortalama: {avg_value:.2f}')
+    ax.set_ylim(bottom=0)
+    ax.set_xlabel("Son Okuma Tarihi")
+    ax.set_ylabel("Ortalama Tüketim")
+    ax.set_title(f"{endeks.upper()} Endeksi Grafiği")
+    ax.legend()
+    ax.grid(True, which='both', linestyle='--', linewidth=0.5, color='lightgray')
+    fig.tight_layout()
+    return fig
+
+
+
+def plot_zdm240_graph(df):
+    fig, ax = plt.subplots()
+
+    aylar = ['Tük_Ocak', 'Tük_Şubat', 'Tük_Mart', 'Tük_Nisan', 'Tük_Mayıs', 'Tük_Haziran',
+             'Tük_Temmuz', 'Tük_Ağustos', 'Tük_Eylül', 'Tük_Ekim', 'Tük_Kasım', 'Tük_Aralık']
+    ay_labels = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+
+    df = df.copy()
+    for col in aylar:
+        df[col] = df[col].astype(str).str.replace(",", ".").astype(float)
+
+    for yil in df["Mali yıl"].unique():
+        yil_df = df[df["Mali yıl"] == yil]
+        tuk_values = yil_df[aylar].values.flatten()
+        if len(tuk_values) == 12:
+            ax.plot(ay_labels, tuk_values, marker='o', label=str(yil))
+
+    ax.set_xlabel("Ay")
+    ax.set_ylabel("Tüketim (kWh)")
+    ax.set_title("Yıllık Tüketim Grafiği")
+    ax.legend()
+    ax.grid(True, which='both', linestyle='--', linewidth=0.5, color='lightgray')
+    fig.tight_layout()
+    return fig
+
+
+
+# ===============================
+# TESİSAT GÖRSEL PANELİ
+# ===============================
+def show_visualization(zip_buffer_el31, zip_buffer, df_grouped):
+    st.title("Tesisat Görüntüleme")
+
+    try:
+        el31_zip = zipfile.ZipFile(zip_buffer_el31)
+        zblir_zip = zipfile.ZipFile(zip_buffer)
+
+        # Dosya adlarını tam haliyle al (örn: 4003930-A, 4003930-AB, 4003930)
+        el31_names = [f.replace(".csv", "") for f in el31_zip.namelist()]
+        zblir_names = [f.replace(".csv", "") for f in zblir_zip.namelist()]
+
+        # ZDM240'daki tesisatları int yerine string yap
+        zdm240_names = [str(t) for t in df_grouped["Tesisat"].unique()]
+
+        # Seçim için birleşik liste
+        all_names = sorted(set(el31_names + zblir_names))
+
+        selected = st.selectbox("Bir tesisat seçin:", all_names)
+
+        # ================= EL31 =================
+        el31_file = next((f for f in el31_zip.namelist() if f.replace(".csv", "") == selected), None)
+        if el31_file:
+            df_el31 = pd.read_csv(el31_zip.open(el31_file), sep=";")
+            st.subheader("P Endeksi")
+            st.pyplot(plot_el31_graph(df_el31))
+
+        # ================= ZBLIR =================
+        zblir_file = next((f for f in zblir_zip.namelist() if f.replace(".csv", "") == selected), None)
+        if zblir_file:
+            df_zblir = pd.read_csv(zblir_zip.open(zblir_file), sep=";")
+            for endeks in ["T1", "T2", "T3"]:
+                st.subheader(f"{endeks} Endeksi")
+                st.pyplot(plot_zblir_graph(df_zblir, endeks))
+
+        # ================= ZDM240 (suffixsiz) =================
+        # Seçilen tesisat A/AB ile bitiyorsa ana numarayı al
+        base_selected = selected.split("-")[0]
+
+        if base_selected in zdm240_names:
+            df_zdm = df_grouped[df_grouped["Tesisat"].astype(str) == base_selected]
+
+            if not df_zdm.empty:
+                st.subheader("ZDM240 Tüketim Grafiği")
+                st.pyplot(plot_zdm240_graph(df_zdm))
+            else:
+                st.warning("Bu tesisat için ZDM240 verisi bulunamadı.")
+
+    except Exception as e:
+        st.error(f"🚨 Görselleştirme sırasında hata oluştu: {e}")
+
+# ===============================
+# GÖRSELLEŞTİRMEYİ TETİKLE
+# ===============================
+# === GÖRSELLEŞTİRMEYİ TETİKLE ===
+if st.button("📊 Tesisat Grafiklerini Görüntüle"):
+    st.session_state["show_graphs"] = True
+
+if st.session_state.get("show_graphs", False):
+    show_visualization(zip_buffer_el31, zip_buffer, df_grouped)
+
+
+
+
+
+
+
 
 
 # 📊 Kullanıcıdan analiz için giriş al
