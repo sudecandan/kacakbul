@@ -785,16 +785,41 @@ if seasonal_analysis_enabled:
 
 
 
-# 📌 **Tesisatları Öncelik Sırasına Göre Sırala Butonu**
-st.header(" 🔍 Tesisat Öncelik Sıralaması")
+# 5. TESİSAT SIRALAMA
 
-if st.button("**Tesisatları Sırala**"):
 
-    # **P ve T analizleri sonucunda bulunan şüpheli tesisatlar**
-    if st.session_state.analysis_results is None or st.session_state.analysis_results.empty:
+
+# 📌 Tesisat Öncelik Sıralaması
+st.header("⚡ Tesisat Öncelik Sıralaması")
+
+if st.button("📊 **Tesisatları Sırala**"):
+
+    # Varsayılan: None
+    aktif_analiz = None
+
+    # Öncelik: Q (mevsimsel) analizi yapılmışsa onu kullan
+    if "q_analysis_results" in st.session_state and st.session_state.q_analysis_results is not None:
+        if not st.session_state.q_analysis_results.empty:
+            aktif_analiz = st.session_state.q_analysis_results
+            st.info("ℹ️ Mevsimsel analiz (Q) sonuçları sıralamaya dahil edildi.")
+    
+    # Q yoksa, P/T analizini kullan
+    if aktif_analiz is None:
+        if "analysis_results" in st.session_state and st.session_state.analysis_results is not None:
+            if not st.session_state.analysis_results.empty:
+                aktif_analiz = st.session_state.analysis_results
+                st.info("ℹ️ Sadece P ve T analiz sonuçları sıralamaya dahil edildi.")
+    
+    # Eğer hala analiz bulunamadıysa
+    if aktif_analiz is None:
         st.warning("⚠️ Henüz analiz yapılmadı veya şüpheli tesisat bulunamadı!")
+    
     else:
-        supheli_tesisatlar = st.session_state.analysis_results["Şüpheli Tesisat"].tolist()
+        # Sıralama yapılacak tesisatlar
+        supheli_tesisatlar = aktif_analiz["Tesisat" if "Tesisat" in aktif_analiz.columns else "Şüpheli Tesisat"].tolist()
+
+
+        
 
         # 📌 **Gerekli CSV Dosyalarını Yükle**
         sektor_list = pd.read_csv(st.session_state["uploaded_files"]["Sektör Listesi"], dtype=str, delimiter=';')
@@ -859,7 +884,11 @@ if st.button("**Tesisatları Sırala**"):
         mahalle_puan_dict = dict(zip(mahalle_puan_list['Mahalle'], mahalle_puan_list['Puan']))
 
 
-        supheli_tesisatlar = [str(t).strip() for t in st.session_state.analysis_results["Şüpheli Tesisat"].tolist()]
+        supheli_tesisatlar_raw = aktif_analiz["Tesisat" if "Tesisat" in aktif_analiz.columns else "Şüpheli Tesisat"]
+        supheli_tesisatlar = [str(int(float(t))) for t in supheli_tesisatlar_raw]
+
+
+
 
         # 📌 **Şüpheli Tesisatları Puanlama**
         results = []
@@ -868,20 +897,22 @@ if st.button("**Tesisatları Sırala**"):
             tahakkuk_faktoru = carpan_list_dict.get(tesisat, None)
             kablo = sube_kablo_list_dict.get(tesisat, None)
             mahalle_adi = mahalle_list_dict.get(tesisat, None)
-
+        
             mahalle_puan = float(mahalle_puan_dict.get(mahalle_adi, "0").replace(',', '.')) if mahalle_adi else 0
             sektor_puan = float(sektor_puan_dict.get(nace_kodu, "0").replace(',', '.')) if nace_kodu else 0
             carpan_puan = float(carpan_puan_dict.get(tahakkuk_faktoru, "0").replace(',', '.')) if tahakkuk_faktoru else 0
             sube_kablo_puan = float(sube_kablo_puan_dict.get(kablo, "0").replace(',', '.')) if kablo else 0
-
+        
             toplam_puan = (
                 (sektor_puan * sektor_weight) +
                 (carpan_puan * carpan_weight) +
                 (mahalle_puan * mahalle_weight) +
                 (sube_kablo_puan * sube_kablo_weight)
             )
-
-            results.append([tesisat, toplam_puan])
+        
+            results.append([tesisat, int(round(toplam_puan))])
+        
+                 
 
         # 📌 **Sonuçları Sırala ve Göster**
         df_sorted = pd.DataFrame(results, columns=['Tesisat', 'Puan']).sort_values(by="Puan", ascending=False)
@@ -894,4 +925,3 @@ if st.button("**Tesisatları Sırala**"):
                            df_sorted.to_csv(sep=";", index=False).encode("utf-8"),
                            "supheli_tesisatlar_sirali.csv",
                            "text/csv")
- 
